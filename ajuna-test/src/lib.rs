@@ -1,5 +1,5 @@
 use ajuna_solo_runtime::AccountId;
-use frame_support::{assert_ok};
+use frame_support::assert_ok;
 
 mod ajuna_node;
 mod constants;
@@ -7,7 +7,7 @@ mod sidechain;
 
 use crate::{
 	ajuna_node::AjunaNode,
-	constants::{BlockProcessing, RuntimeBuilding, SIDECHAIN_SIGNING_KEY},
+	constants::{BlockProcessing, SIDECHAIN_SIGNING_KEY},
 	sidechain::{AjunaBoard, Guess, SideChain, SigningKey},
 };
 use ajuna_solo_runtime::{GameRegistry, Origin};
@@ -25,6 +25,9 @@ impl Player {
 			sidechain::Origin::signed(self.account_id.clone()),
 			guess
 		));
+	}
+	pub fn account_id(&self) -> &AccountId {
+		&self.account_id
 	}
 }
 
@@ -53,11 +56,20 @@ impl Network {
 mod tests {
 	use crate::{
 		constants::{PLAYER_1, PLAYER_2, SUDO},
-		sidechain::SideChain,
-		AjunaNode, Network, Player, RuntimeBuilding, SideChainSigningKey,
-		SIDECHAIN_SIGNING_KEY,
+		sidechain::{SideChain, THE_NUMBER},
+		AjunaNode, Network, Player, SideChainSigningKey, SIDECHAIN_SIGNING_KEY,
 	};
-	use ajuna_solo_runtime::{GameRegistry};
+	use crate::constants::RuntimeBuilding;
+	use ajuna_common::RunnerState;
+	use ajuna_solo_runtime::{pallet_ajuna_gameregistry::Game, AccountId, GameRegistry, Runner};
+	use codec::Decode;
+
+	fn last_event() -> ajuna_solo_runtime::Event {
+		frame_system::Pallet::<ajuna_solo_runtime::Runtime>::events()
+			.pop()
+			.expect("Event expected")
+			.event
+	}
 
 	#[test]
 	fn play_a_guessing_game() {
@@ -79,9 +91,50 @@ mod tests {
 					Network::process(1);
 					// Game would be acknowledged by sidechain
 					assert!(GameRegistry::queued().is_none());
+
+					// This is the first game in this test, hence 1
+					let game_id = 1;
+					assert_eq!(
+						last_event(),
+						ajuna_solo_runtime::Event::Runner(
+							pallet_ajuna_runner::Event::StateAccepted { runner_id: game_id }
+						),
+						"We should have our game(runner) accepted with the game id"
+					);
 					// Game should be created now and we can play
 					player_1.play_turn(100);
 					player_2.play_turn(101);
+					// Win the game
+					player_1.play_turn(THE_NUMBER);
+					// We want to move forward by one block so the sidechain imports
+					Network::process(1);
+
+					// TODO - bug here where the event stack is cleared on the ajuna_solo_runtime
+					// when we win a game in ajuna-board
+
+					// We should expect the runner for this game
+					// has now finished with our final assert_eq!(
+					// 	last_event(),
+					// 	ajuna_solo_runtime::Event::Runner(
+					// 		pallet_ajuna_runner::Event::StateFinished { runner_id: game_id }
+					// 	),
+					// 	"We should have our game(runner) finished with the game id"
+					// );
+
+					// The runner state is now finished with the completed state from the board
+					match Runner::runners(game_id).expect("the game should be a runner") {
+						RunnerState::Finished(mut final_state) => {
+							let game = Game::<AccountId>::decode(&mut final_state)
+								.expect("game state as finished");
+
+							assert_eq!(
+								&game.winner.expect("winner for game"),
+								player_1.account_id(),
+								"winner should be player 1"
+							);
+						},
+						_ => panic!("State should be Finished for runner"),
+					}
 				});
 			});
 	}

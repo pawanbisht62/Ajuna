@@ -18,7 +18,6 @@ use crate::{impl_block_numbers, AccountId};
 use ajuna_common::{Finished, TurnBasedGame};
 use frame_support::parameter_types;
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
-use pallet_ajuna_board;
 use sp_core::{Decode, Encode, H256};
 use sp_runtime::{
 	testing::Header,
@@ -199,17 +198,17 @@ impl<K: SigningKey> SideChain<K> {
 
 mod block_importer {
 	use super::AjunaBoard;
+	use crate::sidechain::SideChainRuntime;
 	use ajuna_common::RunnerState;
 	use ajuna_solo_runtime::{pallet_ajuna_gameregistry::Game, AccountId, GameRegistry, Runner};
 	use codec::Decode;
 	use frame_support::assert_ok;
 	use std::collections::BTreeSet;
-
 	/// Consume block at the sidechain. We simply read the game registry storage and create the
 	/// `ack_game` xt signed with the signing key
 	pub fn consume_block(signing_key: AccountId) {
 		if let Some(queued_games) = GameRegistry::queued() {
-			// Acknowledge game in queue with L1 as xt
+			// Acknowledge game in queue with L1 as xt, this will kill the `queued` storage item
 			assert_ok!(GameRegistry::ack_game(
 				ajuna_solo_runtime::Origin::signed(signing_key.clone()),
 				queued_games.clone(),
@@ -227,10 +226,29 @@ mod block_importer {
 					// Call `pallet_board::new_game` with players from game
 					assert_ok!(AjunaBoard::new_game(
 						crate::sidechain::Origin::signed(signing_key.clone()),
+						game_id,
 						BTreeSet::from(players),
 					));
 				}
 			}
 		}
+
+		// Process those that have finished and report back to L1
+		pallet_ajuna_board::BoardWinners::<SideChainRuntime>::iter().for_each(
+			|(board_id, winner)| {
+				// Finish game on L1
+				assert_ok!(GameRegistry::finish_game(
+					ajuna_solo_runtime::Origin::signed(signing_key.clone()),
+					board_id,
+					winner
+				));
+
+				// Flush winning games in sidechain
+				assert_ok!(AjunaBoard::flush_winner(
+					crate::sidechain::Origin::signed(signing_key.clone()),
+					board_id
+				));
+			},
+		);
 	}
 }

@@ -270,6 +270,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-ajuna-board",
+ "pallet-ajuna-runner",
  "pallet-balances",
  "pallet-membership",
  "parity-scale-codec",
