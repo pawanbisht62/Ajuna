@@ -2,8 +2,8 @@ use ajuna_solo_runtime::AccountId;
 use frame_support::assert_ok;
 
 mod ajuna_node;
-mod traits;
 mod sidechain;
+mod traits;
 
 // Some useful accounts
 pub const SIDECHAIN_SIGNING_KEY: [u8; 32] = [0x1; 32];
@@ -13,8 +13,8 @@ pub const PLAYER_2: [u8; 32] = [0x4; 32];
 
 use crate::{
 	ajuna_node::AjunaNode,
-	traits::{BlockProcessing, RuntimeBuilding},
 	sidechain::{AjunaBoard, Guess, SideChain, SigningKey},
+	traits::{BlockProcessing, RuntimeBuilding},
 };
 use ajuna_solo_runtime::{GameRegistry, Origin};
 
@@ -31,6 +31,9 @@ impl Player {
 			sidechain::Origin::signed(self.account_id.clone()),
 			guess
 		));
+	}
+	pub fn account_id(&self) -> &AccountId {
+		&self.account_id
 	}
 }
 
@@ -60,13 +63,15 @@ mod tests {
 	use super::{PLAYER_1, PLAYER_2, SIDECHAIN_SIGNING_KEY, SUDO};
 
 	use crate::{
-		sidechain::{SideChain, THE_NUMBER}, AjunaNode, Network, Player, RuntimeBuilding, SideChainSigningKey,
+		sidechain::{SideChain, THE_NUMBER},
+		AjunaNode, Network, Player, RuntimeBuilding, SideChainSigningKey,
 	};
-	use ajuna_solo_runtime::{GameRegistry, Observers};
-	use frame_support::assert_ok;
 	use ajuna_common::RunnerState;
-	use ajuna_solo_runtime::{pallet_ajuna_gameregistry::Game, AccountId, GameRegistry, Runner};
+	use ajuna_solo_runtime::{
+		pallet_ajuna_gameregistry::Game, AccountId, GameRegistry, Observers, Runner,
+	};
 	use codec::Decode;
+	use frame_support::assert_ok;
 
 	fn last_event() -> ajuna_solo_runtime::Event {
 		frame_system::Pallet::<ajuna_solo_runtime::Runtime>::events()
@@ -110,6 +115,7 @@ mod tests {
 					player_2.play_turn(101);
 					// Win the game
 					player_1.play_turn(THE_NUMBER);
+
 					// We want to move forward by one block so the sidechain imports
 					Network::process(1);
 
@@ -117,7 +123,8 @@ mod tests {
 					// when we win a game in ajuna-board
 
 					// We should expect the runner for this game
-					// has now finished with our final assert_eq!(
+					// has now finished with our final
+					// assert_eq!(
 					// 	last_event(),
 					// 	ajuna_solo_runtime::Event::Runner(
 					// 		pallet_ajuna_runner::Event::StateFinished { runner_id: game_id }
