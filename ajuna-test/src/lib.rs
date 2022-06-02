@@ -2,12 +2,18 @@ use ajuna_solo_runtime::AccountId;
 use frame_support::assert_ok;
 
 mod ajuna_node;
-mod constants;
+mod traits;
 mod sidechain;
+
+// Some useful accounts
+pub const SIDECHAIN_SIGNING_KEY: [u8; 32] = [0x1; 32];
+pub const SUDO: [u8; 32] = [0x2; 32];
+pub const PLAYER_1: [u8; 32] = [0x3; 32];
+pub const PLAYER_2: [u8; 32] = [0x4; 32];
 
 use crate::{
 	ajuna_node::AjunaNode,
-	constants::{BlockProcessing, SIDECHAIN_SIGNING_KEY},
+	traits::{BlockProcessing, RuntimeBuilding},
 	sidechain::{AjunaBoard, Guess, SideChain, SigningKey},
 };
 use ajuna_solo_runtime::{GameRegistry, Origin};
@@ -25,9 +31,6 @@ impl Player {
 			sidechain::Origin::signed(self.account_id.clone()),
 			guess
 		));
-	}
-	pub fn account_id(&self) -> &AccountId {
-		&self.account_id
 	}
 }
 
@@ -54,12 +57,13 @@ impl Network {
 
 #[cfg(test)]
 mod tests {
+	use super::{PLAYER_1, PLAYER_2, SIDECHAIN_SIGNING_KEY, SUDO};
+
 	use crate::{
-		constants::{PLAYER_1, PLAYER_2, SUDO},
-		sidechain::{SideChain, THE_NUMBER},
-		AjunaNode, Network, Player, SideChainSigningKey, SIDECHAIN_SIGNING_KEY,
+		sidechain::{SideChain, THE_NUMBER}, AjunaNode, Network, Player, RuntimeBuilding, SideChainSigningKey,
 	};
-	use crate::constants::RuntimeBuilding;
+	use ajuna_solo_runtime::{GameRegistry, Observers};
+	use frame_support::assert_ok;
 	use ajuna_common::RunnerState;
 	use ajuna_solo_runtime::{pallet_ajuna_gameregistry::Game, AccountId, GameRegistry, Runner};
 	use codec::Decode;
@@ -73,13 +77,13 @@ mod tests {
 
 	#[test]
 	fn play_a_guessing_game() {
-		AjunaNode::default()
-			.account(SUDO.into())
-			.players(vec![PLAYER_1.into(), PLAYER_2.into()])
-			.sidechain(SIDECHAIN_SIGNING_KEY.into())
-			.build()
-			.execute_with(|| {
-				SideChain::<SideChainSigningKey>::build().execute_with(|| {
+		SideChain::<SideChainSigningKey>::build().execute_with(|| {
+			AjunaNode::default()
+				.account(SUDO.into())
+				.players(vec![PLAYER_1.into(), PLAYER_2.into()])
+				.sidechain(SIDECHAIN_SIGNING_KEY.into())
+				.build()
+				.execute_with(|| {
 					// Queue players
 					let player_1 = Player { account_id: PLAYER_1.into() };
 					let player_2 = Player { account_id: PLAYER_2.into() };
@@ -136,6 +140,6 @@ mod tests {
 						_ => panic!("State should be Finished for runner"),
 					}
 				});
-			});
+		});
 	}
 }

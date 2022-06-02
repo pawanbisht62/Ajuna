@@ -273,6 +273,7 @@ dependencies = [
  "pallet-ajuna-runner",
  "pallet-balances",
  "pallet-membership",
+ "pallet-sudo",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
