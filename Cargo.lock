@@ -230,6 +230,7 @@ dependencies = [
  "orml-vesting",
  "pallet-ajuna-gameregistry",
  "pallet-ajuna-matchmaker",
+ "pallet-ajuna-nft",
  "pallet-ajuna-runner",
  "pallet-asset-tx-payment",
  "pallet-assets",
@@ -5492,6 +5493,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-ajuna-auction"
+version = "0.1.0"
+dependencies = [
+ "ajuna-common",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-support-test",
+ "frame-system",
+ "orml-nft",
+ "pallet-ajuna-nft",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-ajuna-board"
 version = "0.1.0"
 dependencies = [
@@ -5554,6 +5575,26 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-ajuna-nft"
+version = "0.1.0"
+dependencies = [
+ "ajuna-common",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-support-test",
+ "frame-system",
+ "orml-nft",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
  "sp-core",
  "sp-io",
  "sp-runtime",

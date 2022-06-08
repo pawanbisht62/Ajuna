@@ -15,6 +15,8 @@ members = [
     "pallets/ajuna-runner",
     "pallets/ajuna-board",
     "pallets/ajuna-template",
+    "pallets/ajuna-nft",
+    "pallets/ajuna-auction",
     "primitives",
     "ajuna-common",
 ]
