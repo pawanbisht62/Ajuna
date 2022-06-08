@@ -226,6 +226,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "hex-literal",
  "log",
+ "orml-nft",
  "orml-vesting",
  "pallet-ajuna-gameregistry",
  "pallet-ajuna-matchmaker",
@@ -604,6 +605,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "log",
+ "orml-nft",
  "orml-vesting",
  "pallet-aura",
  "pallet-authorship",
@@ -5437,6 +5439,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "orml-nft"
+version = "0.4.1-dev"
+source = "git+https://github.com/ajuna-network/open-runtime-module-library?rev=polkadot-v0.9.20#920c5a6e11f76378d8aeb5b3551a834bc4ecb9c8"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "orml-vesting"
 version = "0.4.1-dev"
 source = "git+https://github.com/ajuna-network/open-runtime-module-library?rev=polkadot-v0.9.20#920c5a6e11f76378d8aeb5b3551a834bc4ecb9c8"
@@ -5551,6 +5567,24 @@ dependencies = [
  "ajuna-common",
  "frame-support",
  "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-ajuna-template"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-support-test",
+ "frame-system",
+ "pallet-ajuna-matchmaker",
+ "pallet-scheduler",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -11787,7 +11821,7 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "cfg-if 1.0.0",
+ "cfg-if 0.1.10",
  "digest 0.10.3",
  "rand 0.8.5",
  "static_assertions",

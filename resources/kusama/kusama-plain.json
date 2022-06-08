@@ -41,6 +41,9 @@
       "vesting": {
         "vesting": []
       },
+      "nft": {
+        "nft": []
+      },
       "collatorSelection": {
         "invulnerables": [
           "5F1hLjAfxfY6BKey2GArFnSECzsNcoWwD8qNZgJQJFGhGfy4",

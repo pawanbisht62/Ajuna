@@ -140,6 +140,7 @@ fn testnet_genesis(
 			key: Some(get_account_id_from_seed::<sr25519::Public>("Alice")),
 		},
 		vesting: bajun_runtime::VestingConfig { vesting: Default::default() },
+		nft: bajun_runtime::NftConfig { tokens: Default::default() },
 		council: bajun_runtime::CouncilConfig::default(),
 		council_membership: Default::default(),
 		treasury: Default::default(),

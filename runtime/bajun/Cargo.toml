@@ -21,6 +21,7 @@ ajuna-primitives = { default-features = false, path = "../../primitives" }
 
 # ORML
 orml-vesting = { git = "https://github.com/ajuna-network/open-runtime-module-library", default-features = false, rev = "polkadot-v0.9.20" }
+orml-nft     = { git = "https://github.com/ajuna-network/open-runtime-module-library", default-features = false, rev = "polkadot-v0.9.20" }
 
 # Substrate
 frame-benchmarking                         = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.20" }
@@ -98,6 +99,7 @@ std = [
     "frame-system-rpc-runtime-api/std",
     "frame-system/std",
     "orml-vesting/std",
+    "orml-nft/std",
     "pallet-aura/std",
     "pallet-authorship/std",
     "pallet-balances/std",

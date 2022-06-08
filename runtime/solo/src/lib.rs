@@ -284,6 +284,20 @@ impl orml_vesting::Config for Runtime {
 }
 
 parameter_types! {
+	pub const MaxClassMetadata: u32 = 1;
+	pub const MaxTokenMetadata: u32 = 1;
+}
+
+impl orml_nft::Config for Runtime {
+	type ClassId = u64;
+	type TokenId = u64;
+	type ClassData = u32;
+	type TokenData = u32;
+	type MaxClassMetadata = MaxClassMetadata;
+	type MaxTokenMetadata = MaxTokenMetadata;
+}
+
+parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"aj/trsry");
 	pub const ZeroPercent: Permill = Permill::from_percent(0);
 	pub const FivePercent: Permill = Permill::from_percent(5);
@@ -533,17 +547,18 @@ construct_runtime!(
 		AssetTxPayment: pallet_asset_tx_payment = 6,
 		Assets: pallet_assets = 7,
 		Vesting: orml_vesting = 8,
-		Council: pallet_collective::<Instance2> = 9,
-		CouncilMembership: pallet_membership::<Instance2> = 10,
-		Treasury: pallet_treasury = 11,
-		Democracy: pallet_democracy = 12,
-		Sudo: pallet_sudo = 13,
-		Scheduler: pallet_scheduler = 14,
-		Matchmaker: pallet_ajuna_matchmaker = 15,
-		Runner: pallet_ajuna_runner = 16,
-		GameRegistry: pallet_ajuna_gameregistry = 17,
-		Observers: pallet_membership::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>} = 18,
-		Teerex: pallet_teerex = 19,
+		Nft: orml_nft = 9,
+		Council: pallet_collective::<Instance2> = 10,
+		CouncilMembership: pallet_membership::<Instance2> = 11,
+		Treasury: pallet_treasury = 12,
+		Democracy: pallet_democracy = 13,
+		Sudo: pallet_sudo = 14,
+		Scheduler: pallet_scheduler = 15,
+		Matchmaker: pallet_ajuna_matchmaker = 16,
+		Runner: pallet_ajuna_runner = 17,
+		GameRegistry: pallet_ajuna_gameregistry = 18,
+		Observers: pallet_membership::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>} = 19,
+		Teerex: pallet_teerex = 20,
 	}
 );
 

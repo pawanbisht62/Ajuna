@@ -90,6 +90,9 @@
       "vesting": {
         "vesting": []
       },
+      "nft": {
+        "nft": []
+      },
       "council": {
         "phantom": null,
         "members": []

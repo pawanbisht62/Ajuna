@@ -19,7 +19,7 @@ use ajuna_primitives::Balance;
 use ajuna_solo_runtime::{
 	currency::AJUNS, AssetsConfig, AuraConfig, BalancesConfig, CouncilConfig, GenesisConfig,
 	GrandpaConfig, ObserversConfig, SudoConfig, SystemConfig, TeerexConfig, VestingConfig,
-	WASM_BINARY,
+	NftConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 
@@ -76,6 +76,7 @@ struct Config {
 	balances: BalancesConfig,
 	assets: AssetsConfig,
 	vesting: VestingConfig,
+	nft: NftConfig,
 }
 
 fn development_config_genesis() -> GenesisConfig {
@@ -135,6 +136,7 @@ fn development_config_genesis() -> GenesisConfig {
 				cliff_vest_ferdie_at_30,
 			],
 		},
+		nft: NftConfig { tokens: vec![] },
 	})
 }
 
@@ -185,6 +187,7 @@ fn testnet_config_genesis() -> GenesisConfig {
 		},
 		assets: AssetsConfig::default(),
 		vesting: VestingConfig::default(),
+		nft: NftConfig::default(),
 	})
 }
 
@@ -193,7 +196,7 @@ fn compose_genesis_config(config: Config) -> GenesisConfig {
 	let wasm_binary = WASM_BINARY.expect(
 		"Development wasm binary is not available. Please rebuild with SKIP_WASM_BUILD disabled.",
 	);
-	let Config { aura, grandpa, sudo, council, balances, assets, vesting, observers } = config;
+	let Config { aura, grandpa, sudo, council, balances, assets, vesting, nft, observers } = config;
 	GenesisConfig {
 		// overridden config
 		aura,
@@ -204,6 +207,7 @@ fn compose_genesis_config(config: Config) -> GenesisConfig {
 		balances,
 		assets,
 		vesting,
+		nft,
 		// default config
 		system: SystemConfig { code: wasm_binary.to_vec() },
 		transaction_payment: Default::default(),

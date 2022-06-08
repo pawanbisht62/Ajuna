@@ -58,6 +58,7 @@ sp-version                                 = { default-features = false, git = "
 
 # open-runtime-module-library
 orml-vesting = { default-features = false, git = "https://github.com/ajuna-network/open-runtime-module-library", rev = "polkadot-v0.9.20" }
+orml-nft     = { default-features = false, git = "https://github.com/ajuna-network/open-runtime-module-library", rev = "polkadot-v0.9.20" }
 
 # Integritee pallet
 pallet-teerex = { default-features = false, git = "https://github.com/integritee-network/pallets", branch = "polkadot-v0.9.20" }
@@ -124,4 +125,5 @@ std = [
     "sp-transaction-pool/std",
     "sp-version/std",
     "orml-vesting/std",
+    "orml-nft/std",
 ]
