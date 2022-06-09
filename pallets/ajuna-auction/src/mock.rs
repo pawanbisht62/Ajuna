@@ -102,7 +102,7 @@ impl orml_nft::Config for Test {
 	type ClassId = u64;
 	type TokenId = u64;
 	type ClassData = u32;
-	type TokenData = pallet_ajuna_nft::TokenData;
+	type TokenData = u32;
 	type MaxClassMetadata = MaxClassMetadata;
 	type MaxTokenMetadata = MaxTokenMetadata;
 }

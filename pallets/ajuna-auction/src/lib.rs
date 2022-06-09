@@ -76,7 +76,7 @@ pub type AuctionInfoOf<T> = AuctionInfo<
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::{
-		pallet_prelude::*, sp_runtime::traits::TrailingZeroInput,
+		pallet_prelude::*,
 	};
 	use frame_system::pallet_prelude::*;
 
@@ -140,45 +140,6 @@ pub mod pallet {
 	#[pallet::getter(fn auction_owner_by_id)]
 	/// Auction owner by ID
 	pub type AuctionOwnerById<T: Config> = StorageMap<_, Twox64Concat, T::AuctionId, T::AccountId, OptionQuery>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn founder_key)]
-	pub type FounderKey<T: Config> = StorageValue<_, T::AccountId>;
-
-	// Used for generating a zeroed account id, copy pasted for now
-	struct DefaultAccountIdGenerator<T: Config>(pub T::AccountId);
-
-	impl<T: Config> Default for DefaultAccountIdGenerator<T> {
-		fn default() -> Self {
-			// Stolen from https://github.com/paritytech/substrate/commit/f57c6447af83a1706041d462ca290b4f2a1bac4f#diff-68096a50d12854e07693a4828590517bb81fea37a9253640278ecdc5b93b6992R860
-			let zero_account_id = T::AccountId::decode(&mut TrailingZeroInput::zeroes())
-				.expect("infinite length input; no invalid inputs for type; qed");
-
-			DefaultAccountIdGenerator(zero_account_id)
-		}
-	}
-
-	// The genesis config type.
-	#[pallet::genesis_config]
-	pub struct GenesisConfig<T: Config> {
-		pub founder_key: T::AccountId,
-	}
-
-	// The default value for the genesis config type.
-	#[cfg(feature = "std")]
-	impl<T: Config> Default for GenesisConfig<T> {
-		fn default() -> Self {
-			Self { founder_key: DefaultAccountIdGenerator::<T>::default().0 }
-		}
-	}
-
-	// The build of genesis for the pallet.
-	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-		fn build(&self) {
-			<FounderKey<T>>::put(&self.founder_key);
-		}
-	}
 
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events

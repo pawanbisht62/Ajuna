@@ -15,27 +15,20 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+use frame_support::{pallet_prelude::*};
+pub use pallet::*;
+use sp_std::prelude::*;
 
-/// Edit this file to define custom logic or remove it if it is not needed.
-/// Learn more about FRAME and the core library of Substrate FRAME pallets:
-/// <https://substrate.dev/docs/en/knowledgebase/runtime/frame>
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	sp_runtime::traits::{StaticLookup, Zero},
 	ensure,
 };
-use scale_info::TypeInfo;
-
-use sp_std::prelude::*;
 
 mod benchmarking;
 
 pub mod weights;
 use weights::WeightInfo;
-
-// Re-export pallet items so that they can be accessed from the crate namespace.
-pub use pallet::*;
 
 #[cfg(test)]
 mod mock;
@@ -45,20 +38,13 @@ mod tests;
 
 pub type Balance = u128;
 pub type ClassData = u32;
+pub type TokenData = u32;
 pub type TokenIdOf<T> = <T as orml_nft::Config>::TokenId;
 pub type ClassIdOf<T> = <T as orml_nft::Config>::ClassId;
 
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, MaxEncodedLen, Debug, TypeInfo)]
-pub struct TokenData {
-	pub locked: bool,
-}
-
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{
-		pallet_prelude::*,
-	};
+
 	use frame_system::pallet_prelude::*;
 
 	// important to use outside structs and consts
@@ -77,30 +63,39 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
-	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
-	// Pallets use events to inform users when important changes are made.
-	// https://substrate.dev/docs/en/knowledgebase/runtime/events
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// New NFT token class created
 		NFTTokenClassCreated(T::AccountId, T::ClassId),
+		/// New NFT token minted
 		NFTTokenMinted(T::AccountId, T::ClassId, u32),
-		NFTTokenMintedLockToggled(T::AccountId, T::ClassId, T::TokenId, bool),
+		/// NFT token lock toggled
+		NFTTokenMintedLockToggled(T::AccountId, T::ClassId, T::TokenId, u32),
+		/// NFT token transferred
 		NFTTokenTransferred(T::AccountId, T::AccountId, T::ClassId, T::TokenId),
+		/// NFT token burned
 		NFTTokenBurned(T::AccountId, T::ClassId, T::TokenId),
+		/// NFT token class destroyed
 		NFTTokenClassDestroyed(T::AccountId, T::ClassId),
 	}
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
+		/// Class not found
 		ClassNotFound,
+		/// Token not found
 		TokenNotFound,
+		/// No permission
 		NoPermission,
+		/// Can not destroy class
 		CannotDestroyClass,
+		/// Token is locked
 		TokenLocked,
+		/// Invalid quantity
 		InvalidQuantity,
 	}
 
@@ -134,8 +129,7 @@ pub mod pallet {
 			ensure!(quantity > Zero::zero(), Error::<T>::InvalidQuantity);
 			let class_info = orml_nft::Pallet::<T>::classes(class_id).ok_or(Error::<T>::ClassNotFound)?;
 			ensure!(sender == class_info.owner, Error::<T>::NoPermission);
-			let mut data = token_data;
-			data.locked = false;
+			let data = token_data;
 			for _ in 0..quantity {
 				orml_nft::Pallet::<T>::mint(&sender, class_id, metadata.clone(), data.clone())?;
 			}
@@ -153,7 +147,7 @@ pub mod pallet {
 			let _class_info = orml_nft::Pallet::<T>::classes(token.0).ok_or(Error::<T>::ClassNotFound)?;
 			let token_info = orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenNotFound)?;
 			ensure!(sender == token_info.owner, Error::<T>::NoPermission);
-			ensure!(!token_info.data.locked, Error::<T>::TokenLocked);
+			ensure!(token_info.data == 0, Error::<T>::TokenLocked);
 			let to: T::AccountId = T::Lookup::lookup(dest)?;
 			orml_nft::Pallet::<T>::transfer(&sender, &to, token)?;
 			Self::deposit_event(Event::NFTTokenTransferred(sender, to, token.0, token.1));
@@ -166,7 +160,7 @@ pub mod pallet {
 			let _class_info = orml_nft::Pallet::<T>::classes(token.0).ok_or(Error::<T>::ClassNotFound)?;
 			let token_info = orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenNotFound)?;
 			ensure!(sender == token_info.owner, Error::<T>::NoPermission);
-			ensure!(!token_info.data.locked, Error::<T>::TokenLocked);
+			ensure!(token_info.data == 0, Error::<T>::TokenLocked);
 			orml_nft::Pallet::<T>::burn(&sender, token)?;
 			Self::deposit_event(Event::NFTTokenBurned(sender, token.0, token.1));
 			Ok(().into())
@@ -196,7 +190,7 @@ impl<T: Config> Pallet<T> {
 
 	pub fn is_locked(token: (T::ClassId, T::TokenId)) -> Result<bool, DispatchError> {
 		let token_info = orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenNotFound)?;
-		Ok(token_info.data.locked)
+		Ok(token_info.data > 0)
 	}
 
 	pub fn toggle_lock(account: &T::AccountId, token_id: (T::ClassId, T::TokenId)) -> DispatchResult {
@@ -204,13 +198,17 @@ impl<T: Config> Pallet<T> {
 		orml_nft::Tokens::<T>::mutate_exists(token_id.0, token_id.1, |token| -> DispatchResult {
 			if let Some(ref mut token) = token {
 				ensure!(*account == token.owner, Error::<T>::NoPermission);
-				token.data.locked ^= true; // Toggle
-						   // fix clone
+				 // Toggle
+				if token.data > 0 {
+					token.data = 0;
+				} else {
+					token.data = 1;
+				};
 				Self::deposit_event(Event::NFTTokenMintedLockToggled(
 					account.clone(),
 					token_id.0,
 					token_id.1,
-					token.data.locked,
+					token.data,
 				));
 			}
 			Ok(())

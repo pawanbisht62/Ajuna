@@ -61,7 +61,7 @@ fn mint_works() {
 			Origin::signed(ALICE),
 			0,
 			"a token".as_bytes().to_vec(),
-			TokenData { locked: false },
+			0, // not locked
 			TEST_QUANTITY,
 		));
 		let event = tests::Event::Nft(crate::Event::NFTTokenMinted(ALICE, CLASS_ID, TEST_QUANTITY));
@@ -85,7 +85,7 @@ fn mint_fails() {
 				Origin::signed(BOB),
 				0,
 				"a token".as_bytes().to_vec(),
-				TokenData { locked: false },
+				0, // not locked
 				TEST_QUANTITY,
 			),
 			Error::<Test>::NoPermission
@@ -106,7 +106,7 @@ fn transfer_works() {
 			Origin::signed(ALICE),
 			0,
 			"a token".as_bytes().to_vec(),
-			TokenData { locked: false },
+			0, // not locked
 			TEST_QUANTITY,
 		));
 
@@ -129,7 +129,7 @@ fn transfer_fails() {
 			Origin::signed(ALICE),
 			0,
 			"a token".as_bytes().to_vec(),
-			TokenData { locked: false },
+			0, // not locked
 			TEST_QUANTITY,
 		));
 
@@ -153,7 +153,7 @@ fn burn_works() {
 			Origin::signed(ALICE),
 			0,
 			"a token".as_bytes().to_vec(),
-			TokenData { locked: false },
+			0, // not locked
 			TEST_QUANTITY,
 		));
 
@@ -176,7 +176,7 @@ fn burn_fails() {
 			Origin::signed(ALICE),
 			0,
 			"a token".as_bytes().to_vec(),
-			TokenData { locked: false },
+			0, // not locked
 			TEST_QUANTITY,
 		));
 
@@ -213,7 +213,7 @@ fn destroy_class_fails() {
 			Origin::signed(ALICE),
 			0,
 			"a token".as_bytes().to_vec(),
-			TokenData { locked: false },
+			0, // not locked
 			TEST_QUANTITY,
 		));
 

@@ -71,6 +71,8 @@ use types::governance::*;
 // Some public reexports..
 pub use pallet_ajuna_gameregistry;
 pub use pallet_ajuna_matchmaker;
+pub use pallet_ajuna_nft;
+pub use pallet_ajuna_auction;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_teerex;
 pub use pallet_timestamp::Call as TimestampCall;
@@ -531,6 +533,20 @@ impl pallet_teerex::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl pallet_ajuna_nft::Config for Runtime {
+	type Event = Event;
+	type WeightInfo = pallet_ajuna_nft::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_ajuna_auction::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type AuctionId = u64;
+	type Currency = Balances;
+	type CurrencyBalance = Balance;
+	type WeightInfo = pallet_ajuna_auction::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -559,6 +575,8 @@ construct_runtime!(
 		GameRegistry: pallet_ajuna_gameregistry = 18,
 		Observers: pallet_membership::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>} = 19,
 		Teerex: pallet_teerex = 20,
+		AjunaNft: pallet_ajuna_nft = 21,
+		Auctions: pallet_ajuna_auction = 22,
 	}
 );
 

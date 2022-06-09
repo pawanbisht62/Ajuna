@@ -19,8 +19,6 @@ use crate::{mock::*, Error};
 
 use frame_support::{assert_noop, assert_ok};
 
-use pallet_ajuna_nft::TokenData;
-
 pub type AuctionsModule = Pallet<Test>;
 pub type NftPallet = pallet_ajuna_nft::Pallet<Test>;
 
@@ -30,7 +28,7 @@ fn create_nft() {
 		Origin::signed(100),
 		0,
 		"Class1_mint1".as_bytes().to_vec(),
-		TokenData { locked: false },
+		0, // not locked
 		1
 	));
 }

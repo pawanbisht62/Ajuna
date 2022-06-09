@@ -228,6 +228,7 @@ dependencies = [
  "log",
  "orml-nft",
  "orml-vesting",
+ "pallet-ajuna-auction",
  "pallet-ajuna-gameregistry",
  "pallet-ajuna-matchmaker",
  "pallet-ajuna-nft",
@@ -5585,7 +5586,6 @@ dependencies = [
 name = "pallet-ajuna-nft"
 version = "0.1.0"
 dependencies = [
- "ajuna-common",
  "frame-benchmarking",
  "frame-support",
  "frame-support-test",
@@ -5594,7 +5594,6 @@ dependencies = [
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
- "serde",
  "sp-core",
  "sp-io",
  "sp-runtime",
