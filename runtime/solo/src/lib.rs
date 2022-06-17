@@ -113,7 +113,7 @@ parameter_types! {
 		::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
-	pub const SS58Prefix: u8 = 42; // TODO[PLAT-80]: 1337 for mainnet
+	pub const SS58Prefix: u16 = 1328; // BAJUN = 1337 & AJUNA = 1328
 }
 
 impl frame_system::Config for Runtime {

@@ -27,7 +27,7 @@ use sc_service::ChainType;
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 
 pub fn development_config(chain_type: ChainType) -> Result<ChainSpec, String> {
-	let properties = chain_spec_properties("AJUN", 12, 42);
+	let properties = chain_spec_properties("AJUN", 12, 1328);
 	let name = match chain_type {
 		ChainType::Local => "Ajuna Local Testnet",
 		ChainType::Development => "Ajuna Dev Testnet",
@@ -51,7 +51,7 @@ pub fn development_config(chain_type: ChainType) -> Result<ChainSpec, String> {
 }
 
 pub fn testnet_config() -> Result<ChainSpec, String> {
-	let properties = chain_spec_properties("AJUN", 12, 42);
+	let properties = chain_spec_properties("AJUN", 12, 1328);
 
 	Ok(ChainSpec::from_genesis(
 		"Ajuna Testnet",

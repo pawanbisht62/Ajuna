@@ -6,7 +6,7 @@
   "telemetryEndpoints": null,
   "protocolId": "solochain-testnet",
   "properties": {
-    "ss58Format": 42,
+    "ss58Format": 1328,
     "tokenDecimals": 12,
     "tokenSymbol": "AJUN"
   },
@@ -33,7 +33,7 @@
             "5DNeEQmTH8PCJnTv62PtGAkzvNtA5HkBTzSVEVRYzbfKwYKc",
             1
           ],
-          [  
+          [
             "5H8NPu7vtUr7ZrSRsABgvXFzAvaDN39cicWUnZBrP5BTz9hR",
             1
           ]
