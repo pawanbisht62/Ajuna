@@ -56,10 +56,7 @@ impl<BoardId, State, Players> BoardGame<BoardId, State, Players> {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_system::{
-		ensure_signed,
-		pallet_prelude::OriginFor,
-	};
+	use frame_system::{ensure_signed, pallet_prelude::OriginFor};
 	use sp_runtime::traits::AtLeast32BitUnsigned;
 	use sp_std::vec::Vec;
 

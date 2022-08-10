@@ -106,8 +106,3 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 pub fn last_event() -> Event {
 	frame_system::Pallet::<Test>::events().pop().expect("Event expected").event
 }
-
-pub fn last_two_events() -> (Event, Event) {
-	let mut events = frame_system::Pallet::<Test>::events();
-	(events.pop().expect("Event expected").event, events.pop().expect("Event expected").event)
-}
