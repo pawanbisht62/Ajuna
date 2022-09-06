@@ -69,6 +69,7 @@ use impls::{CreditToTreasury, NegativeImbalanceToTreasury, OneToOneConversion};
 use types::governance::*;
 
 // Some public reexports..
+pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 
@@ -225,6 +226,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
+	type Event = Event;
 	type OnChargeTransaction = CurrencyAdapter<Balances, NegativeImbalanceToTreasury>;
 	type WeightToFee = IdentityFee<Balance>;
 	type LengthToFee = IdentityFee<Balance>;
@@ -316,6 +318,23 @@ impl pallet_membership::Config<pallet_membership::Instance2> for Runtime {
 	type MaxMembers = CouncilMaxMembers;
 	type WeightInfo = pallet_membership::weights::SubstrateWeight<Runtime>;
 }
+use frame_support::pallet_prelude::EnsureOrigin;
+pub struct RootMaxSpendOrigin;
+impl EnsureOrigin<Origin> for RootMaxSpendOrigin {
+	type Success = Balance;
+
+	fn try_origin(o: Origin) -> Result<Self::Success, Origin> {
+		Result::<frame_system::RawOrigin<_>, Origin>::from(o).and_then(|o| match o {
+			frame_system::RawOrigin::Root => Ok(Balance::MAX),
+			r => Err(Origin::from(r)),
+		})
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<Origin, ()> {
+		Ok(Origin::root())
+	}
+}
 
 impl pallet_treasury::Config for Runtime {
 	type PalletId = TreasuryPalletId;
@@ -333,6 +352,7 @@ impl pallet_treasury::Config for Runtime {
 	type Burn = ZeroPercent;
 	type BurnDestination = ();
 	type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+	type SpendOrigin = RootMaxSpendOrigin;
 }
 
 parameter_types! {
