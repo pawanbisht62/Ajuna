@@ -1042,3 +1042,55 @@ mod breed_mogwai {
 		});
 	}
 }
+
+#[cfg(test)]
+mod nft_integration {
+	use super::*;
+	use crate::MogwaiOf;
+	use frame_support::BoundedVec;
+
+	#[test]
+	fn simple_mint_test() {
+		ExtBuilder::default().build().execute_with(|| {
+			let admin = ALICE;
+			let owner = BOB;
+			let class_id = 1;
+
+			// We create the collection that will hold the mogwai dna NFT
+			assert_ok!(<Test as crate::Config>::NFTHandler::force_create(
+				Origin::root(),
+				class_id,
+				admin,
+				true,
+			));
+
+			// We get the instanceId from the MogwaiId
+			let mogwai_id = create_mogwai(owner);
+
+			// We insert the InstanceId on the collection with the same owner as the mogwai creator
+			assert_ok!(<Test as crate::Config>::NFTHandler::mint(
+				Origin::signed(admin),
+				class_id,
+				mogwai_id,
+				owner,
+			));
+
+			let mogwai: MogwaiOf<Test> = BattleMogs::mogwai(mogwai_id);
+
+			let attribute_key = BoundedVec::try_from(vec![0]);
+
+			let dna = mogwai.dna[0].zip(mogwai.dna[1]);
+
+			let attribute_value = BoundedVec::try_from(dna);
+
+			// We can then store the DNA as an attribute of the NFT
+			assert_ok!(<Test as crate::Config>::NFTHandler::set_attribute(
+				Origin::signed(admin),
+				class_id,
+				Some(mogwai_id),
+				attribute_key,
+				attribute_value,
+			));
+		});
+	}
+}

@@ -52,8 +52,17 @@ type BalanceOf<T> =
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, BoundedBTreeSet};
+	use codec::HasCompact;
+	use frame_support::{
+		dispatch::DispatchResult,
+		pallet_prelude::*,
+		traits::tokens::nonfungibles::{
+			Create as NFTCreate, Mutate as NFTMutate, Transfer as NFTTransfer,
+		},
+		BoundedBTreeSet,
+	};
 	use frame_system::pallet_prelude::*;
+	use sp_core::H256;
 	use sp_runtime::traits::{Bounded, Saturating};
 
 	// important to use outside structs and consts
@@ -85,6 +94,36 @@ pub mod pallet {
 
 		/// Something that provides randomness in the runtime.
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
+
+		type NFTHandler: NFTCreate<Self::AccountId, ClassId = Self::ClassId, InstanceId = Self::ItemId>
+			+ NFTMutate<Self::AccountId>
+			+ NFTTransfer<Self::AccountId>;
+
+		/// Identifier for the class of asset.
+		type ClassId: Member
+			+ Parameter
+			+ Default
+			+ Copy
+			+ HasCompact
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen
+			+ TypeInfo
+			+ From<u64>
+			+ Into<u64>
+			+ sp_std::fmt::Display
+			+ sp_std::cmp::PartialOrd
+			+ sp_std::cmp::Ord;
+
+		/// Identifier for the individual instances of NFT
+		type ItemId: Member
+			+ Parameter
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen
+			+ TypeInfo
+			+ From<H256>
+			+ Into<H256>;
 	}
 
 	#[pallet::pallet]
@@ -249,6 +288,8 @@ pub mod pallet {
 			ensure_root(origin)?;
 
 			Organizer::<T>::put(&organizer);
+
+			//T::NFTHandler::create_class()
 
 			// Emit an event.
 			Self::deposit_event(Event::OrganizerSet(organizer));

@@ -18,7 +18,7 @@
 use crate::{self as pallet_battle_mogs};
 use frame_support::{
 	parameter_types,
-	traits::{ConstU16, ConstU64, OnFinalize, OnInitialize},
+	traits::{AsEnsureOriginWithArg, ConstU16, ConstU32, ConstU64, OnFinalize, OnInitialize},
 };
 use sp_core::H256;
 use sp_runtime::{
@@ -52,6 +52,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		BattleMogs: pallet_battle_mogs::{Pallet, Call, Storage, Event<T>},
+		Unique: pallet_uniques::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -98,10 +99,34 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
+pub type MockClassId = u64;
+pub type MockItemId = H256;
+
 impl pallet_battle_mogs::Config for Test {
 	type Event = Event;
 	type Currency = pallet_balances::Pallet<Self>;
 	type Randomness = TestRandomness<Self>;
+	type NFTHandler = Unique;
+	type ClassId = MockClassId;
+	type ItemId = MockItemId;
+}
+
+impl pallet_uniques::Config for Test {
+	type Event = Event;
+	type ClassId = MockClassId;
+	type InstanceId = MockItemId;
+	type Currency = Balances;
+	type ForceOrigin = frame_system::EnsureRoot<MockAccountId>;
+	type CreateOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<MockAccountId>>;
+	type ClassDeposit = ConstU64<0>;
+	type InstanceDeposit = ConstU64<0>;
+	type MetadataDepositBase = ConstU64<1>;
+	type AttributeDepositBase = ConstU64<1>;
+	type DepositPerByte = ConstU64<1>;
+	type StringLimit = ConstU32<50>;
+	type KeyLimit = ConstU32<50>;
+	type ValueLimit = ConstU32<50>;
+	type WeightInfo = ();
 }
 
 #[derive(Default)]
