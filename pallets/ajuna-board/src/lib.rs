@@ -205,6 +205,8 @@ pub mod pallet {
 				PlayerBoards::<T>::insert(player, board_id);
 			});
 
+			Self::seed_for_next(&state);
+
 			let board_game = BoardGameOf::<T>::new(
 				board_id,
 				players.clone(),
@@ -247,7 +249,7 @@ pub mod pallet {
 					if let Finished::Winner::<T::AccountId>(winner) =
 						T::Game::is_finished(&board_game.state)
 					{
-						Self::declare_winner(&board_id, &winner, &board_game.state);
+						Self::declare_winner(&board_id, &winner);
 					}
 
 					Ok(())
@@ -298,7 +300,7 @@ pub mod pallet {
 			ensure!(timeout_block_number <= current_block_number, Error::<T>::DisputeFailed);
 
 			let winner = T::Game::get_last_player(&board.state);
-			Self::declare_winner(&board_id, &winner, &board.state);
+			Self::declare_winner(&board_id, &winner);
 
 			Ok(())
 		}
@@ -316,11 +318,9 @@ impl<T: Config> Pallet<T> {
 	fn declare_winner(
 		board_id: &T::BoardId,
 		winner: &<<T as Config>::Game as TurnBasedGame>::Player,
-		board_state: &<<T as Config>::Game as TurnBasedGame>::State,
 	) {
 		// Cache result in storage, this would be cleared on `flush_winner`
 		BoardWinners::<T>::insert(board_id, winner.clone());
-		Self::seed_for_next(board_state);
 		Self::deposit_event(Event::GameFinished { board_id: *board_id, winner: winner.clone() });
 
 		log::info!("Declared winner for board id {:?} as player {:?}", *board_id, winner);
