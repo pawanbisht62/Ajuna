@@ -952,7 +952,11 @@ mod minting {
 					run_to_block(season_1.start);
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::One, mint_type: mint_type.clone() }
+						MintOption {
+							count: MintPackSize::One,
+							mint_type: mint_type.clone(),
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 					match mint_type {
 						MintType::Normal => {
@@ -989,7 +993,11 @@ mod minting {
 					run_to_block(System::block_number() + 1 + mint_cooldown);
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::Three, mint_type: mint_type.clone() }
+						MintOption {
+							count: MintPackSize::Three,
+							mint_type: mint_type.clone(),
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 					match mint_type {
 						MintType::Normal => {
@@ -1023,7 +1031,11 @@ mod minting {
 					assert_eq!(System::account_nonce(ALICE), expected_nonce);
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::Six, mint_type: mint_type.clone() }
+						MintOption {
+							count: MintPackSize::Six,
+							mint_type: mint_type.clone(),
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 					match mint_type {
 						MintType::Normal => {
@@ -1064,7 +1076,8 @@ mod minting {
 								RuntimeOrigin::signed(ALICE),
 								MintOption {
 									count: MintPackSize::One,
-									mint_type: mint_type.clone()
+									mint_type: mint_type.clone(),
+									mint_version: AvatarForgeVersion::V1
 								}
 							));
 							minted_count += 1;
@@ -1083,7 +1096,11 @@ mod minting {
 					assert_noop!(
 						AAvatars::mint(
 							RuntimeOrigin::signed(ALICE),
-							MintOption { count: MintPackSize::One, mint_type: mint_type.clone() }
+							MintOption {
+								count: MintPackSize::One,
+								mint_type: mint_type.clone(),
+								mint_version: AvatarForgeVersion::V1
+							}
 						),
 						Error::<Test>::SeasonClosed
 					);
@@ -1132,7 +1149,7 @@ mod minting {
 					assert_noop!(
 						AAvatars::mint(
 							RuntimeOrigin::signed(ALICE),
-							MintOption { count, mint_type }
+							MintOption { count, mint_type, mint_version: AvatarForgeVersion::V1 }
 						),
 						Error::<Test>::MintClosed
 					);
@@ -1147,7 +1164,10 @@ mod minting {
 			for count in [MintPackSize::One, MintPackSize::Three, MintPackSize::Six] {
 				for mint_type in [MintType::Normal, MintType::Free] {
 					assert_noop!(
-						AAvatars::mint(RuntimeOrigin::none(), MintOption { count, mint_type }),
+						AAvatars::mint(
+							RuntimeOrigin::none(),
+							MintOption { count, mint_type, mint_version: AvatarForgeVersion::V1 }
+						),
 						DispatchError::BadOrigin
 					);
 				}
@@ -1167,7 +1187,11 @@ mod minting {
 						assert_noop!(
 							AAvatars::mint(
 								RuntimeOrigin::signed(ALICE),
-								MintOption { count, mint_type }
+								MintOption {
+									count,
+									mint_type,
+									mint_version: AvatarForgeVersion::V1
+								}
 							),
 							Error::<Test>::SeasonClosed
 						);
@@ -1202,7 +1226,11 @@ mod minting {
 						assert_noop!(
 							AAvatars::mint(
 								RuntimeOrigin::signed(ALICE),
-								MintOption { count, mint_type }
+								MintOption {
+									count,
+									mint_type,
+									mint_version: AvatarForgeVersion::V1
+								}
 							),
 							Error::<Test>::MaxOwnershipReached
 						);
@@ -1227,7 +1255,11 @@ mod minting {
 					run_to_block(season.start + 1);
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::One, mint_type: mint_type.clone() }
+						MintOption {
+							count: MintPackSize::One,
+							mint_type: mint_type.clone(),
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 
 					for _ in 1..mint_cooldown {
@@ -1237,7 +1269,8 @@ mod minting {
 								RuntimeOrigin::signed(ALICE),
 								MintOption {
 									count: MintPackSize::One,
-									mint_type: mint_type.clone()
+									mint_type: mint_type.clone(),
+									mint_version: AvatarForgeVersion::V1
 								}
 							),
 							Error::<Test>::MintCooldown
@@ -1248,7 +1281,11 @@ mod minting {
 					assert_eq!(System::block_number(), (season.start + 1) + mint_cooldown);
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::One, mint_type: MintType::Normal }
+						MintOption {
+							count: MintPackSize::One,
+							mint_type: MintType::Normal,
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 
 					// reset for next iteration
@@ -1269,7 +1306,11 @@ mod minting {
 				assert_noop!(
 					AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: mint_count, mint_type: MintType::Normal }
+						MintOption {
+							count: mint_count,
+							mint_type: MintType::Normal,
+							mint_version: AvatarForgeVersion::V1
+						}
 					),
 					pallet_balances::Error::<Test>::InsufficientBalance
 				);
@@ -1279,7 +1320,11 @@ mod minting {
 				assert_noop!(
 					AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: mint_count, mint_type: MintType::Free }
+						MintOption {
+							count: mint_count,
+							mint_type: MintType::Free,
+							mint_version: AvatarForgeVersion::V1
+						}
 					),
 					Error::<Test>::InsufficientFreeMints
 				);
@@ -1318,11 +1363,10 @@ mod minting {
 mod forging {
 	use super::*;
 	use sp_runtime::testing::H256;
-	use sp_std::collections::btree_set::BTreeSet;
 
 	fn create_avatar(avatar_id_seed: u8, dna: &[u8]) -> AvatarIdOf<Test> {
 		let avatar = Avatar::default().season_id(1).dna(dna);
-		if avatar.min_tier() == RarityTier::Legendary as u8 {
+		if avatar.min_tier::<Test>() == RarityTier::Legendary as u8 {
 			CurrentSeasonStatus::<Test>::mutate(|status| status.max_tier_avatars += 1);
 		}
 
@@ -1393,7 +1437,7 @@ mod forging {
 				));
 				let leader = AAvatars::avatars(leader_id).unwrap().1;
 				assert_eq!(leader.dna.to_vec(), dna_after.to_vec());
-				assert_eq!(leader.min_tier(), RarityTier::Common as u8);
+				assert_eq!(leader.min_tier::<Test>(), RarityTier::Common as u8);
 			});
 	}
 
@@ -1417,11 +1461,19 @@ mod forging {
 			|leader_id: &AvatarIdOf<Test>, expected_dna: &[u8], insert_dna: Option<&[u8]>| {
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::Three, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::Three,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::One, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::One,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				if let Some(dna) = insert_dna {
@@ -1476,7 +1528,11 @@ mod forging {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::One, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::One,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 				let leader_id = AAvatars::owners(BOB)[0];
 				assert_eq!(
@@ -1530,7 +1586,11 @@ mod forging {
 				assert_noop!(
 					AAvatars::mint(
 						RuntimeOrigin::signed(BOB),
-						MintOption { count: MintPackSize::One, mint_type: MintType::Normal }
+						MintOption {
+							count: MintPackSize::One,
+							mint_type: MintType::Normal,
+							mint_version: AvatarForgeVersion::V1
+						}
 					),
 					Error::<Test>::PrematureSeasonEnd
 				);
@@ -1639,7 +1699,11 @@ mod forging {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::Six, mint_type: MintType::Free }
+					MintOption {
+						count: MintPackSize::Six,
+						mint_type: MintType::Free,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				// forge
@@ -1647,7 +1711,7 @@ mod forging {
 				let leader_id = owned_avatar_ids[0];
 				let sacrifice_ids = &owned_avatar_ids[1..3];
 
-				let original_leader = AAvatars::avatars(leader_id).unwrap().1;
+				let original_leader: Avatar = AAvatars::avatars(leader_id).unwrap().1;
 				let original_sacrifices = sacrifice_ids
 					.iter()
 					.map(|id| AAvatars::avatars(id).unwrap().1)
@@ -1659,23 +1723,6 @@ mod forging {
 					sacrifice_ids.to_vec()
 				));
 				let forged_leader = AAvatars::avatars(leader_id).unwrap().1;
-
-				// check the result of the compare method
-				let upgradable_indexes = original_leader.upgradable_indexes::<Test>().unwrap();
-				for (sacrifice, result) in original_sacrifices
-					.iter()
-					.zip([(true, BTreeSet::from([1, 3])), (true, BTreeSet::from([0, 2, 3]))])
-				{
-					assert_eq!(
-						original_leader.compare(
-							sacrifice,
-							&upgradable_indexes,
-							season.max_variations,
-							tiers[tiers.len() - 1].clone() as u8
-						),
-						result
-					)
-				}
 
 				// check all sacrifices are burned
 				for sacrifice_id in sacrifice_ids {
@@ -1695,7 +1742,7 @@ mod forging {
 				assert_eq!(forged_leader.dna.to_vec()[0] >> 4, RarityTier::Legendary as u8);
 				assert_eq!(forged_leader.dna.to_vec()[1] >> 4, RarityTier::Legendary as u8);
 				System::assert_last_event(mock::RuntimeEvent::AAvatars(
-					crate::Event::AvatarForged { avatar_id: leader_id, upgraded_components: 2 },
+					crate::Event::AvatarsForged { avatar_ids: vec![(leader_id, 2)] },
 				));
 
 				// variations remain the same
@@ -1733,7 +1780,11 @@ mod forging {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::Six, mint_type: MintType::Free }
+					MintOption {
+						count: MintPackSize::Six,
+						mint_type: MintType::Free,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				// forge
@@ -1741,7 +1792,7 @@ mod forging {
 				let leader_id = owned_avatar_ids[0];
 				let sacrifice_id = owned_avatar_ids[1];
 
-				let original_leader = AAvatars::avatars(leader_id).unwrap().1;
+				let original_leader: Avatar = AAvatars::avatars(leader_id).unwrap().1;
 				let original_sacrifice = AAvatars::avatars(sacrifice_id).unwrap().1;
 
 				assert_ok!(AAvatars::forge(
@@ -1751,17 +1802,6 @@ mod forging {
 				));
 				let forged_leader = AAvatars::avatars(leader_id).unwrap().1;
 
-				// check the result of the compare method
-				let upgradable_indexes = original_leader.upgradable_indexes::<Test>().unwrap();
-				assert_eq!(
-					original_leader.compare(
-						&original_sacrifice,
-						&upgradable_indexes,
-						season.max_variations,
-						tiers[tiers.len() - 1].clone() as u8
-					),
-					(false, BTreeSet::new())
-				);
 				// check all sacrifices are burned
 				assert!(!Avatars::<Test>::contains_key(sacrifice_id));
 				// check for souls accumulation
@@ -1770,7 +1810,7 @@ mod forging {
 				// check DNAs are the same
 				assert_eq!(original_leader.dna, forged_leader.dna);
 				System::assert_last_event(mock::RuntimeEvent::AAvatars(
-					crate::Event::AvatarForged { avatar_id: leader_id, upgraded_components: 0 },
+					crate::Event::AvatarsForged { avatar_ids: vec![(leader_id, 0)] },
 				));
 			});
 	}
@@ -1797,7 +1837,11 @@ mod forging {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(ALICE),
-					MintOption { count: MintPackSize::Six, mint_type: MintType::Free }
+					MintOption {
+						count: MintPackSize::Six,
+						mint_type: MintType::Free,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 				let leader_id = AAvatars::owners(ALICE)[0];
 				assert_eq!(
@@ -1805,8 +1849,8 @@ mod forging {
 					&[0x04, 0x03, 0x05, 0x01]
 				);
 				assert_eq!(
-					AAvatars::avatars(&leader_id).unwrap().1.min_tier(),
-					tiers[0].clone() as u8,
+					AAvatars::avatars(&leader_id).unwrap().1.min_tier::<Test>(),
+					tiers[0] as u8,
 				);
 
 				// mutate the DNA of leader to make it a tier higher
@@ -1815,14 +1859,14 @@ mod forging {
 					.1
 					.dna
 					.iter()
-					.map(|x| ((tiers[1].clone() as u8) << 4) | (x & 0b0000_1111))
+					.map(|x| ((tiers[1] as u8) << 4) | (x & 0b0000_1111))
 					.collect::<Vec<_>>()
 					.try_into()
 					.unwrap();
 				Avatars::<Test>::insert(leader_id, &leader_avatar);
 				assert_eq!(
-					AAvatars::avatars(&leader_id).unwrap().1.min_tier(),
-					tiers[1].clone() as u8
+					AAvatars::avatars(&leader_id).unwrap().1.min_tier::<Test>(),
+					tiers[1] as u8
 				);
 
 				// forging doesn't take effect
@@ -1909,7 +1953,11 @@ mod forging {
 				for _ in 0..33 {
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::Three, mint_type: MintType::Free }
+						MintOption {
+							count: MintPackSize::Three,
+							mint_type: MintType::Free,
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 				}
 
@@ -1959,7 +2007,11 @@ mod forging {
 				for _ in 0..season.max_sacrifices {
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::One, mint_type: MintType::Free }
+						MintOption {
+							count: MintPackSize::One,
+							mint_type: MintType::Free,
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 				}
 
@@ -1992,7 +2044,11 @@ mod forging {
 					for _ in 0..season.max_sacrifices {
 						assert_ok!(AAvatars::mint(
 							RuntimeOrigin::signed(player),
-							MintOption { count: MintPackSize::One, mint_type: MintType::Free }
+							MintOption {
+								count: MintPackSize::One,
+								mint_type: MintType::Free,
+								mint_version: AvatarForgeVersion::V1
+							}
 						));
 					}
 				}
@@ -2024,7 +2080,11 @@ mod forging {
 				for _ in 0..season.max_sacrifices {
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::One, mint_type: MintType::Free }
+						MintOption {
+							count: MintPackSize::One,
+							mint_type: MintType::Free,
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 				}
 
@@ -2055,11 +2115,19 @@ mod forging {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(ALICE),
-					MintOption { count: MintPackSize::Six, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::Six,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::Six, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::Six,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				let leader = AAvatars::owners(ALICE)[0];
@@ -2112,7 +2180,11 @@ mod forging {
 				for _ in 0..max_sacrifices {
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::One, mint_type: MintType::Free }
+						MintOption {
+							count: MintPackSize::One,
+							mint_type: MintType::Free,
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 					run_to_block(System::block_number() + 1);
 				}
@@ -2121,7 +2193,11 @@ mod forging {
 				for _ in 0..max_sacrifices {
 					assert_ok!(AAvatars::mint(
 						RuntimeOrigin::signed(ALICE),
-						MintOption { count: MintPackSize::One, mint_type: MintType::Free }
+						MintOption {
+							count: MintPackSize::One,
+							mint_type: MintType::Free,
+							mint_version: AvatarForgeVersion::V1
+						}
 					));
 					run_to_block(System::block_number() + 1);
 				}
@@ -2369,7 +2445,11 @@ mod trading {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::One, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::One,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				let avatar_for_sale = AAvatars::owners(BOB)[0];
@@ -2418,7 +2498,11 @@ mod trading {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::One, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::One,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				assert_noop!(
@@ -2445,7 +2529,11 @@ mod trading {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::One, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::One,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				let avatar_for_sale = AAvatars::owners(BOB)[0];
@@ -2495,7 +2583,11 @@ mod trading {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::One, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::One,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				let avatar_for_sale = AAvatars::owners(BOB)[0];
@@ -2551,7 +2643,11 @@ mod trading {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::Three, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::Three,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 				treasury_balance += mint_fees.three;
 				assert_eq!(AAvatars::treasury(1), treasury_balance);
@@ -2691,7 +2787,11 @@ mod trading {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::One, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::One,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				let avatar_for_sale = AAvatars::owners(BOB)[0];
@@ -2716,7 +2816,11 @@ mod trading {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(BOB),
-					MintOption { count: MintPackSize::One, mint_type: MintType::Free }
+					MintOption {
+						count: MintPackSize::One,
+						mint_type: MintType::Free,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 
 				let avatar_for_sale = AAvatars::owners(BOB)[0];
@@ -2817,7 +2921,11 @@ mod lock_avatar {
 				run_to_block(season.start);
 				assert_ok!(AAvatars::mint(
 					RuntimeOrigin::signed(ALICE),
-					MintOption { count: MintPackSize::Three, mint_type: MintType::Normal }
+					MintOption {
+						count: MintPackSize::Three,
+						mint_type: MintType::Normal,
+						mint_version: AvatarForgeVersion::V1
+					}
 				));
 				let avatar_ids = AAvatars::owners(ALICE);
 				let avatar_id = avatar_ids[0];
@@ -2828,11 +2936,12 @@ mod lock_avatar {
 					crate::Event::AvatarLocked { avatar_id, asset_id },
 				));
 
-				let (_, avatar) = AAvatars::avatars(avatar_id).unwrap();
+				let (_, avatar): (_, Avatar) = AAvatars::avatars(avatar_id).unwrap();
 				assert_eq!(
 					avatar,
 					Avatar {
 						season_id: 1,
+						version: AvatarForgeVersion::V1,
 						dna: bounded_vec![0x02, 0x04, 0x00, 0x03, 0x01, 0x12, 0x00, 0x23],
 						souls: 64
 					}
@@ -2846,7 +2955,7 @@ mod lock_avatar {
 					&MockAvatarCollectionId::get(),
 					&asset_id,
 					&AttributeNamespace::Pallet,
-					&<Avatar as NftConvertible>::ASSET_CODE,
+					&<AvatarCodec as NftConvertible>::ASSET_CODE,
 				)
 				.unwrap();
 
@@ -2854,10 +2963,11 @@ mod lock_avatar {
 					encoded_asset,
 					AvatarCodec {
 						season_id: avatar.season_id,
+						version: avatar.version,
 						dna: avatar.dna.clone(),
 						soul_points: avatar.souls,
-						rarity: RarityTier::Common.into(),
-						force: Force::Thermal.into(),
+						rarity: RarityTier::Common as u8,
+						force: Force::Thermal as u8,
 					}
 					.encode()
 				);
@@ -2910,8 +3020,10 @@ mod lock_avatar {
 				.unwrap();
 
 				assert_eq!(
-					RarityTier::decode(&mut encoded_rarity.as_slice())
-						.expect("Decode should succeed"),
+					RarityTier::try_from(
+						u8::decode(&mut encoded_rarity.as_slice()).expect("Decode should succeed")
+					)
+					.expect("try_from should succeed"),
 					RarityTier::Common
 				);
 
@@ -2928,7 +3040,10 @@ mod lock_avatar {
 				.unwrap();
 
 				assert_eq!(
-					Force::decode(&mut encoded_force.as_slice()).expect("Decode should succeed"),
+					Force::try_from(
+						u8::decode(&mut encoded_force.as_slice()).expect("Decode should succeed")
+					)
+					.expect("try_from should succeed"),
 					Force::Thermal
 				);
 

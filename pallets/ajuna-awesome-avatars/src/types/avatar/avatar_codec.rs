@@ -17,26 +17,28 @@
 use crate::*;
 use sp_std::prelude::*;
 
-#[derive(Encode, Decode, Debug, Default, PartialEq)]
+#[derive(Encode, Decode, Clone, Debug, Default, PartialEq)]
 pub struct AvatarCodec {
 	pub season_id: SeasonId,
+	pub version: AvatarForgeVersion,
 	pub dna: Dna,
 	pub soul_points: SoulCount,
-	pub rarity: BoundedVec<u8, ConstU32<20>>,
-	pub force: BoundedVec<u8, ConstU32<20>>,
+	pub rarity: u8,
+	pub force: u8,
 }
 
-impl From<Avatar> for AvatarCodec {
-	fn from(avatar: Avatar) -> Self {
-		let rarity_tier = RarityTier::try_from(avatar.min_tier()).unwrap_or_default();
-		let last_variation = Force::try_from(avatar.last_variation()).unwrap_or_default();
+impl AvatarCodec {
+	pub fn from<T: Config>(avatar: Avatar) -> Self {
+		let rarity_tier = RarityTier::try_from(avatar.min_tier::<T>()).unwrap_or_default();
+		let last_variation = Force::try_from(avatar.last_variation::<T>()).unwrap_or_default();
 
 		Self {
 			season_id: avatar.season_id,
+			version: avatar.version,
 			dna: avatar.dna.clone(),
 			soul_points: avatar.souls,
-			rarity: rarity_tier.into(),
-			force: last_variation.into(),
+			rarity: rarity_tier as u8,
+			force: last_variation as u8,
 		}
 	}
 }
@@ -45,6 +47,7 @@ impl From<AvatarCodec> for Avatar {
 	fn from(avatar_codec: AvatarCodec) -> Self {
 		Self {
 			season_id: avatar_codec.season_id,
+			version: avatar_codec.version,
 			dna: avatar_codec.dna,
 			souls: avatar_codec.soul_points,
 		}

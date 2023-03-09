@@ -82,7 +82,7 @@ use sp_runtime::{
 	traits::{AccountIdConversion, Hash, Saturating, TrailingZeroInput, UniqueSaturatedInto, Zero},
 	ArithmeticError,
 };
-use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
+use sp_std::{boxed::Box, collections::btree_set::BTreeSet, vec::Vec};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -96,9 +96,9 @@ pub mod pallet {
 	pub(crate) type GlobalConfigOf<T> = GlobalConfig<BalanceOf<T>, BlockNumberFor<T>>;
 
 	pub(crate) type CollectionIdOf<T> =
-		<<T as Config>::NftHandler as NftHandler<AccountIdOf<T>, Avatar>>::CollectionId;
+		<<T as Config>::NftHandler as NftHandler<AccountIdOf<T>, AvatarCodec>>::CollectionId;
 	pub(crate) type AssetIdOf<T> =
-		<<T as Config>::NftHandler as NftHandler<AccountIdOf<T>, Avatar>>::AssetId;
+		<<T as Config>::NftHandler as NftHandler<AccountIdOf<T>, AvatarCodec>>::AssetId;
 
 	pub(crate) const MAX_PERCENTAGE: u8 = 100;
 
@@ -118,7 +118,7 @@ pub mod pallet {
 
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 
-		type NftHandler: NftHandler<Self::AccountId, Avatar>;
+		type NftHandler: NftHandler<Self::AccountId, AvatarCodec>;
 
 		#[pallet::constant]
 		type NftCollectionId: Get<CollectionIdOf<Self>>;
@@ -245,7 +245,7 @@ pub mod pallet {
 		/// Avatars minted.
 		AvatarsMinted { avatar_ids: Vec<AvatarIdOf<T>> },
 		/// Avatar forged.
-		AvatarForged { avatar_id: AvatarIdOf<T>, upgraded_components: u8 },
+		AvatarsForged { avatar_ids: Vec<(AvatarIdOf<T>, UpgradedComponents)> },
 		/// Avatar transferred.
 		AvatarTransferred { from: T::AccountId, to: T::AccountId, avatar_id: AvatarIdOf<T> },
 		/// A season has started.
@@ -361,6 +361,8 @@ pub mod pallet {
 		AvatarUnlocked,
 		/// Tried to forge avatars from different seasons.
 		IncorrectAvatarSeason,
+		/// Tried to forge avatars with different DNA versions.
+		IncompatibleAvatarVersions,
 		/// Tried transferring to his or her own account.
 		CannotTransferToSelf,
 		/// Tried claiming treasury during a season.
@@ -754,7 +756,9 @@ pub mod pallet {
 			ensure!(Self::ensure_for_trade(&avatar_id).is_err(), Error::<T>::AvatarInTrade);
 			Self::ensure_unlocked(&avatar_id)?;
 
-			let asset_id = T::NftHandler::store_as_nft(account, T::NftCollectionId::get(), avatar)?;
+			let avatar_codec = AvatarCodec::from::<T>(avatar);
+			let asset_id =
+				T::NftHandler::store_as_nft(account, T::NftCollectionId::get(), avatar_codec)?;
 			LockedAvatars::<T>::insert(avatar_id, &asset_id);
 			Self::deposit_event(Event::AvatarLocked { avatar_id, asset_id });
 			Ok(())
@@ -818,7 +822,7 @@ pub mod pallet {
 		}
 
 		#[inline]
-		fn random_hash(phrase: &[u8], who: &T::AccountId) -> T::Hash {
+		pub(crate) fn random_hash(phrase: &[u8], who: &T::AccountId) -> T::Hash {
 			let (seed, _) = T::Randomness::random(phrase);
 			let seed = T::Hash::decode(&mut TrailingZeroInput::new(seed.as_ref()))
 				.expect("input is padded with zeroes; qed");
@@ -840,11 +844,11 @@ pub mod pallet {
 				let probs =
 					if batched_mint { &season.batch_mint_probs } else { &season.single_mint_probs };
 				let mut cumulative_sum = 0;
-				let mut random_tier = season.tiers[0].clone() as u8;
+				let mut random_tier = season.tiers[0] as u8;
 				for i in 0..probs.len() {
 					let new_cumulative_sum = cumulative_sum + probs[i];
 					if random_prob >= cumulative_sum && random_prob < new_cumulative_sum {
-						random_tier = season.tiers[i].clone() as u8;
+						random_tier = season.tiers[i] as u8;
 						break
 					}
 					cumulative_sum = new_cumulative_sum;
@@ -890,10 +894,9 @@ pub mod pallet {
 					let avatar_id = Self::random_hash(b"create_avatar", player);
 					let dna = Self::random_dna(&avatar_id, &season, is_batched)?;
 					let souls = (dna.iter().map(|x| *x as SoulCount).sum::<SoulCount>() % 100) + 1;
-					let avatar = Avatar { season_id, dna, souls };
-					Avatars::<T>::insert(avatar_id, (&player, avatar));
-					Owners::<T>::try_append(&player, avatar_id)
-						.map_err(|_| Error::<T>::MaxOwnershipReached)?;
+					let avatar =
+						Avatar { season_id, version: mint_option.mint_version, dna, souls };
+					Self::try_add_avatar_to(player, avatar_id, avatar)?;
 					Ok(avatar_id)
 				})
 				.collect::<Result<Vec<AvatarIdOf<T>>, DispatchError>>()?;
@@ -950,79 +953,21 @@ pub mod pallet {
 			ensure!(forge.open, Error::<T>::ForgeClosed);
 
 			let (season_id, season) = Self::current_season_with_id()?;
-			let (mut leader, sacrifice_ids, sacrifices) =
+			let (leader, sacrifice_ids, sacrifices) =
 				Self::ensure_for_forge(player, leader_id, sacrifice_ids, &season_id, &season)?;
-			let prev_leader_tier = leader.min_tier();
 
-			let max_tier = season.tiers.iter().max().ok_or(Error::<T>::UnknownTier)?.clone() as u8;
-			let (mut unique_matched_indexes, matches) =
-				leader.compare_all::<T>(&sacrifices, season.max_variations, max_tier)?;
+			let forger: Box<dyn Forger<T>> = leader.version.get_forger();
+			let input_leader = (*leader_id, leader);
+			let input_sacrifices =
+				sacrifice_ids.into_iter().zip(sacrifices).collect::<Vec<ForgeItem<T>>>();
+			let (output_leader, output_other) =
+				forger.forge_with(player, input_leader.clone(), input_sacrifices, &season)?;
 
-			let random_hash = Self::random_hash(b"forging avatar", player);
-			let random_hash = random_hash.as_ref();
-			let mut upgraded_components = 0;
+			Self::process_leader_forge_output(player, &season, input_leader, output_leader)?;
+			Self::process_other_forge_outputs(player, &season, output_other)?;
 
-			let current_block = <frame_system::Pallet<T>>::block_number();
-			let prob = leader.forge_probability::<T>(&season, &current_block, matches);
+			Self::update_forging_statistics_for_player(player, season_id)?;
 
-			let rolls = sacrifices.len();
-			for hash in random_hash.iter().take(rolls) {
-				let roll = hash % MAX_PERCENTAGE;
-				if roll <= prob {
-					if let Some(first_matched_index) = unique_matched_indexes.pop_first() {
-						let nucleotide = leader.dna[first_matched_index];
-						let current_tier_index = season
-							.tiers
-							.iter()
-							.position(|tier| tier.clone() as u8 == nucleotide >> 4)
-							.ok_or(Error::<T>::UnknownTier)?;
-
-						let already_maxed_out = current_tier_index == (season.tiers.len() - 1);
-						if !already_maxed_out {
-							let next_tier = season.tiers[current_tier_index + 1].clone() as u8;
-							let upgraded_nucleotide = (next_tier << 4) | (nucleotide & 0b0000_1111);
-							leader.dna[first_matched_index] = upgraded_nucleotide;
-							upgraded_components += 1;
-						}
-					}
-				}
-			}
-
-			let after_leader_tier = leader.min_tier();
-			if prev_leader_tier != max_tier && after_leader_tier == max_tier {
-				CurrentSeasonStatus::<T>::mutate(|status| {
-					status.max_tier_avatars.saturating_inc();
-					if status.max_tier_avatars == season.max_tier_forges {
-						status.early_ended = true;
-					}
-				});
-			}
-
-			Avatars::<T>::insert(leader_id, (player, leader));
-			sacrifice_ids.iter().for_each(Avatars::<T>::remove);
-			let remaining_avatar_ids: BoundedAvatarIdsOf<T> = Owners::<T>::take(player)
-				.into_iter()
-				.filter(|avatar_id| !sacrifice_ids.contains(avatar_id))
-				.collect::<Vec<_>>()
-				.try_into()
-				.map_err(|_| Error::<T>::IncorrectAvatarId)?;
-			Owners::<T>::insert(player, remaining_avatar_ids);
-
-			Accounts::<T>::try_mutate(player, |AccountInfo { stats, .. }| -> DispatchResult {
-				if stats.forge.first.is_zero() {
-					stats.forge.first = current_block;
-				}
-				stats.forge.last = current_block;
-				stats
-					.forge
-					.seasons_participated
-					.try_insert(season_id)
-					.map_err(|_| Error::<T>::IncorrectSeasonId)?;
-				Ok(())
-			})?;
-			SeasonStats::<T>::mutate(season_id, player, |info| info.forged.saturating_inc());
-
-			Self::deposit_event(Event::AvatarForged { avatar_id: *leader_id, upgraded_components });
 			Ok(())
 		}
 
@@ -1109,21 +1054,147 @@ pub mod pallet {
 			ensure!(Self::ensure_for_trade(leader_id).is_err(), Error::<T>::AvatarInTrade);
 			Self::ensure_unlocked(leader_id)?;
 
+			let leader = Self::ensure_ownership(player, leader_id)?;
+			ensure!(leader.season_id == *season_id, Error::<T>::IncorrectAvatarSeason);
+
 			let deduplicated_sacrifice_ids = sacrifice_ids.iter().copied().collect::<BTreeSet<_>>();
 			let sacrifices = deduplicated_sacrifice_ids
 				.iter()
 				.map(|id| {
 					let avatar = Self::ensure_ownership(player, id)?;
 					ensure!(avatar.season_id == *season_id, Error::<T>::IncorrectAvatarSeason);
+					ensure!(
+						avatar.version == leader.version,
+						Error::<T>::IncompatibleAvatarVersions
+					);
 					Self::ensure_unlocked(id)?;
 					Ok(avatar)
 				})
 				.collect::<Result<Vec<Avatar>, DispatchError>>()?;
 
-			let leader = Self::ensure_ownership(player, leader_id)?;
-			ensure!(leader.season_id == *season_id, Error::<T>::IncorrectAvatarSeason);
-
 			Ok((leader, deduplicated_sacrifice_ids, sacrifices))
+		}
+
+		#[inline]
+		fn process_leader_forge_output(
+			player: &AccountIdOf<T>,
+			season: &SeasonOf<T>,
+			input_leader: ForgeItem<T>,
+			output_leader: LeaderForgeOutput<T>,
+		) -> Result<(), DispatchError> {
+			match output_leader {
+				LeaderForgeOutput::Forged((leader_id, leader), upgraded_components) => {
+					let prev_leader_tier = input_leader.1.min_tier::<T>();
+					let after_leader_tier = leader.min_tier::<T>();
+					let max_tier = season.max_tier() as u8;
+
+					if prev_leader_tier != max_tier && after_leader_tier == max_tier {
+						CurrentSeasonStatus::<T>::mutate(|status| {
+							status.max_tier_avatars.saturating_inc();
+							if status.max_tier_avatars == season.max_tier_forges {
+								status.early_ended = true;
+							}
+						});
+					}
+
+					Avatars::<T>::insert(leader_id, (player, leader));
+
+					// TODO: May change in the future
+					Self::deposit_event(Event::AvatarsForged {
+						avatar_ids: vec![(leader_id, upgraded_components)],
+					});
+				},
+				LeaderForgeOutput::Consumed(leader_id) =>
+					Self::remove_avatar_from(player, &leader_id),
+			}
+
+			Ok(())
+		}
+
+		#[inline]
+		fn process_other_forge_outputs(
+			player: &AccountIdOf<T>,
+			_season: &SeasonOf<T>,
+			other_outputs: Vec<ForgeOutput<T>>,
+		) -> Result<(), DispatchError> {
+			let mut minted_avatars: Vec<AvatarIdOf<T>> = Vec::with_capacity(0);
+			let mut forged_avatars: Vec<(AvatarIdOf<T>, UpgradedComponents)> =
+				Vec::with_capacity(0);
+
+			for output in other_outputs {
+				match output {
+					ForgeOutput::Forged((avatar_id, avatar), upgraded_components) => {
+						Avatars::<T>::insert(avatar_id, (player, avatar));
+						forged_avatars.push((avatar_id, upgraded_components));
+					},
+					ForgeOutput::Minted(avatar) => {
+						let avatar_id = Self::random_hash(b"create_avatar", player);
+						Self::try_add_avatar_to(player, avatar_id, avatar)?;
+						minted_avatars.push(avatar_id);
+					},
+					ForgeOutput::Consumed(avatar_id) =>
+						Self::remove_avatar_from(player, &avatar_id),
+				}
+			}
+
+			// TODO: May be removed in the future
+			if !minted_avatars.is_empty() {
+				Self::deposit_event(Event::AvatarsMinted { avatar_ids: minted_avatars });
+			}
+
+			// TODO: May change in the future
+			if !forged_avatars.is_empty() {
+				Self::deposit_event(Event::AvatarsForged { avatar_ids: forged_avatars });
+			}
+
+			Ok(())
+		}
+
+		#[inline]
+		fn update_forging_statistics_for_player(
+			player: &AccountIdOf<T>,
+			season_id: SeasonId,
+		) -> Result<(), DispatchError> {
+			let current_block = <frame_system::Pallet<T>>::block_number();
+
+			Accounts::<T>::try_mutate(player, |AccountInfo { stats, .. }| -> DispatchResult {
+				if stats.forge.first.is_zero() {
+					stats.forge.first = current_block;
+				}
+				stats.forge.last = current_block;
+				stats
+					.forge
+					.seasons_participated
+					.try_insert(season_id)
+					.map_err(|_| Error::<T>::IncorrectSeasonId)?;
+				Ok(())
+			})?;
+
+			SeasonStats::<T>::mutate(season_id, player, |info| {
+				info.forged.saturating_inc();
+			});
+
+			Ok(())
+		}
+
+		#[inline]
+		fn try_add_avatar_to(
+			player: &AccountIdOf<T>,
+			avatar_id: AvatarIdOf<T>,
+			avatar: Avatar,
+		) -> Result<(), DispatchError> {
+			Avatars::<T>::insert(avatar_id, (player, avatar));
+			Owners::<T>::try_append(&player, avatar_id)
+				.map_err(|_| Error::<T>::MaxOwnershipReached)?;
+			Ok(())
+		}
+
+		#[inline]
+		fn remove_avatar_from(player: &AccountIdOf<T>, avatar_id: &AvatarIdOf<T>) {
+			Avatars::<T>::remove(avatar_id);
+			Owners::<T>::mutate(player, |avatars| {
+				avatars.retain(|id| id != avatar_id);
+			});
 		}
 
 		fn ensure_for_trade(
