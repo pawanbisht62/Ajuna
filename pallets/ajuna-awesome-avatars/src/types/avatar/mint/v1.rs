@@ -18,7 +18,7 @@ where
 		(0..mint_option.count as usize)
 			.map(|_| {
 				let avatar_id = Pallet::<T>::random_hash(b"create_avatar", player);
-				let dna = self.random_dna(&avatar_id, &season, is_batched)?;
+				let dna = self.random_dna(&avatar_id, season, is_batched)?;
 				let souls = (dna.iter().map(|x| *x as SoulCount).sum::<SoulCount>() % 100) + 1;
 				let avatar =
 					Avatar { season_id: *season_id, version: mint_option.mint_version, dna, souls };
