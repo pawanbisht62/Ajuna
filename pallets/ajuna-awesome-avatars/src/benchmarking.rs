@@ -85,7 +85,7 @@ fn create_avatars<T: Config>(name: &'static str, n: u32) -> Result<(), &'static 
 			&MintOption {
 				mint_type: MintType::Free,
 				count: MintPackSize::One,
-				mint_version: AvatarForgeVersion::V1,
+				mint_version: AvatarVersion::V1,
 			},
 		)?;
 		Accounts::<T>::mutate(&player, |account| account.stats.mint.last = Zero::zero());
@@ -106,7 +106,7 @@ benchmarks! {
 		let caller = account::<T>(name);
 		Accounts::<T>::mutate(&caller, |account| account.free_mints =  MintCount::MAX);
 
-		let mint_option = MintOption { mint_type: MintType::Free, count: MintPackSize::Six, mint_version: AvatarForgeVersion::V1 };
+		let mint_option = MintOption { mint_type: MintType::Free, count: MintPackSize::Six, mint_version: AvatarVersion::V1 };
 	}: mint(RawOrigin::Signed(caller.clone()), mint_option)
 	verify {
 		let n = n as usize;
@@ -123,7 +123,7 @@ benchmarks! {
 		let mint_fee = AAvatars::<T>::global_configs().mint.fees.fee_for(&MintPackSize::Six);
 		T::Currency::make_free_balance_be(&caller, mint_fee);
 
-		let mint_option = MintOption { mint_type: MintType::Normal, count: MintPackSize::Six, mint_version: AvatarForgeVersion::V1 };
+		let mint_option = MintOption { mint_type: MintType::Normal, count: MintPackSize::Six, mint_version: AvatarVersion::V1 };
 	}: mint(RawOrigin::Signed(caller.clone()), mint_option)
 	verify {
 		let n = n as usize;

@@ -5,14 +5,6 @@ use sp_std::{boxed::Box, vec::Vec};
 mod v1;
 mod v2;
 
-/// Used to indicate which version of the forging logic should be used with a given Avatar.
-#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub enum AvatarForgeVersion {
-	#[default]
-	V1,
-	V2,
-}
-
 /// Trait used to implement generic forging logic for an entity.
 pub(crate) trait ForgeProvider<T: Config> {
 	fn get_forger(&self) -> Box<dyn Forger<T>>;
@@ -21,14 +13,14 @@ pub(crate) trait ForgeProvider<T: Config> {
 		F: Fn(Box<dyn Forger<T>>) -> R;
 }
 
-impl<T> ForgeProvider<T> for AvatarForgeVersion
+impl<T> ForgeProvider<T> for AvatarVersion
 where
 	T: Config,
 {
 	fn get_forger(&self) -> Box<dyn Forger<T>> {
 		match self {
-			AvatarForgeVersion::V1 => Box::new(v1::AvatarForgerV1::<T>(PhantomData)),
-			AvatarForgeVersion::V2 => Box::new(v2::AvatarForgerV2::<T>(PhantomData)),
+			AvatarVersion::V1 => Box::new(v1::AvatarForgerV1::<T>(PhantomData)),
+			AvatarVersion::V2 => Box::new(v2::AvatarForgerV2::<T>(PhantomData)),
 		}
 	}
 

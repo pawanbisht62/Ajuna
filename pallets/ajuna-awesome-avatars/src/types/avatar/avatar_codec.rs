@@ -20,7 +20,7 @@ use sp_std::prelude::*;
 #[derive(Encode, Decode, Clone, Debug, Default, PartialEq)]
 pub struct AvatarCodec {
 	pub season_id: SeasonId,
-	pub version: AvatarForgeVersion,
+	pub version: AvatarVersion,
 	pub dna: Dna,
 	pub soul_points: SoulCount,
 	pub rarity: u8,

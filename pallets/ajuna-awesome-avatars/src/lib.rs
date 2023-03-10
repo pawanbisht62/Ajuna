@@ -781,16 +781,19 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		/// The account ID of the treasury.
+		#[inline]
 		pub fn account_id() -> T::AccountId {
 			T::PalletId::get().into_account_truncating()
 		}
 
+		#[inline]
 		pub(crate) fn deposit_into_treasury(season_id: &SeasonId, amount: BalanceOf<T>) {
 			Treasury::<T>::mutate(season_id, |bal| bal.saturating_accrue(amount));
 			T::Currency::deposit_creating(&Self::account_id(), amount);
 		}
 
 		/// Check that the origin is an organizer account.
+		#[inline]
 		pub(crate) fn ensure_organizer(
 			origin: OriginFor<T>,
 		) -> Result<T::AccountId, DispatchError> {
@@ -801,6 +804,7 @@ pub mod pallet {
 		}
 
 		/// Validates a new season.
+		#[inline]
 		pub(crate) fn ensure_season(
 			season_id: &SeasonId,
 			mut season: SeasonOf<T>,
@@ -831,50 +835,8 @@ pub mod pallet {
 			(seed, &who, nonce.encode()).using_encoded(T::Hashing::hash)
 		}
 
-		#[inline]
-		fn random_component(
-			season: &SeasonOf<T>,
-			hash: &T::Hash,
-			index: usize,
-			batched_mint: bool,
-		) -> (u8, u8) {
-			let hash = hash.as_ref();
-			let random_tier = {
-				let random_prob = hash[index] % MAX_PERCENTAGE;
-				let probs =
-					if batched_mint { &season.batch_mint_probs } else { &season.single_mint_probs };
-				let mut cumulative_sum = 0;
-				let mut random_tier = season.tiers[0] as u8;
-				for i in 0..probs.len() {
-					let new_cumulative_sum = cumulative_sum + probs[i];
-					if random_prob >= cumulative_sum && random_prob < new_cumulative_sum {
-						random_tier = season.tiers[i] as u8;
-						break
-					}
-					cumulative_sum = new_cumulative_sum;
-				}
-				random_tier
-			};
-			let random_variation = hash[index + 1] % season.max_variations;
-			(random_tier, random_variation)
-		}
-
-		fn random_dna(
-			hash: &T::Hash,
-			season: &SeasonOf<T>,
-			batched_mint: bool,
-		) -> Result<Dna, DispatchError> {
-			let dna = (0..season.max_components)
-				.map(|i| {
-					let (random_tier, random_variation) =
-						Self::random_component(season, hash, i as usize * 2, batched_mint);
-					((random_tier << 4) | random_variation) as u8
-				})
-				.collect::<Vec<_>>();
-			Dna::try_from(dna).map_err(|_| Error::<T>::IncorrectDna.into())
-		}
-
 		/// Mint a new avatar.
+		#[inline]
 		pub(crate) fn do_mint(player: &T::AccountId, mint_option: &MintOption) -> DispatchResult {
 			let GlobalConfig { mint, .. } = Self::global_configs();
 			ensure!(mint.open, Error::<T>::MintClosed);
@@ -888,16 +850,18 @@ pub mod pallet {
 
 			let season_id = Self::current_season_id();
 			let season = Self::seasons(season_id).ok_or(Error::<T>::UnknownSeason)?;
-			let is_batched = mint_option.count.is_batched();
-			let generated_avatar_ids = (0..mint_option.count as usize)
-				.map(|_| {
-					let avatar_id = Self::random_hash(b"create_avatar", player);
-					let dna = Self::random_dna(&avatar_id, &season, is_batched)?;
-					let souls = (dna.iter().map(|x| *x as SoulCount).sum::<SoulCount>() % 100) + 1;
-					let avatar =
-						Avatar { season_id, version: mint_option.mint_version, dna, souls };
-					Self::try_add_avatar_to(player, avatar_id, avatar)?;
-					Ok(avatar_id)
+
+			let mint_output =
+				mint_option.mint_version.with_minter(|minter: Box<dyn Minter<T>>| {
+					minter.mint_avatar_set(player, &season_id, &season, mint_option)
+				})?;
+
+			// Add generated avatars from minter to storage
+			let generated_avatar_ids = mint_output
+				.into_iter()
+				.map(|(minted_avatar_id, minted_avatar)| {
+					Self::try_add_avatar_to(player, minted_avatar_id, minted_avatar)?;
+					Ok(minted_avatar_id)
 				})
 				.collect::<Result<Vec<AvatarIdOf<T>>, DispatchError>>()?;
 
@@ -906,6 +870,7 @@ pub mod pallet {
 				Error::<T>::MaxOwnershipReached
 			);
 
+			// Try to pay minting fees
 			match mint_option.mint_type {
 				MintType::Normal => {
 					let fee = mint.fees.fee_for(&mint_option.count);
@@ -923,6 +888,7 @@ pub mod pallet {
 				},
 			};
 
+			// Update both season and players statistics
 			Accounts::<T>::try_mutate(player, |AccountInfo { stats, .. }| -> DispatchResult {
 				if stats.mint.first.is_zero() {
 					stats.mint.first = current_block;
@@ -944,6 +910,7 @@ pub mod pallet {
 		}
 
 		/// Enhance an avatar using a batch of avatars.
+		#[inline]
 		pub(crate) fn do_forge(
 			player: &T::AccountId,
 			leader_id: &AvatarIdOf<T>,
@@ -971,6 +938,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[inline]
 		fn do_transfer_avatar(
 			from: &T::AccountId,
 			to: &T::AccountId,
@@ -997,6 +965,7 @@ pub mod pallet {
 			})
 		}
 
+		#[inline]
 		fn current_season_with_id() -> Result<(SeasonId, SeasonOf<T>), DispatchError> {
 			let mut season_id = Self::current_season_id();
 			let season = match Self::seasons(season_id) {
@@ -1011,6 +980,7 @@ pub mod pallet {
 			Ok((season_id, season))
 		}
 
+		#[inline]
 		fn ensure_ownership(
 			player: &T::AccountId,
 			avatar_id: &AvatarIdOf<T>,
@@ -1020,6 +990,7 @@ pub mod pallet {
 			Ok(avatar)
 		}
 
+		#[inline]
 		pub(crate) fn ensure_for_mint(
 			player: &T::AccountId,
 			mint_type: &MintType,
@@ -1036,6 +1007,7 @@ pub mod pallet {
 			Ok(free_mints)
 		}
 
+		#[inline]
 		fn ensure_for_forge(
 			player: &T::AccountId,
 			leader_id: &AvatarIdOf<T>,
@@ -1210,6 +1182,7 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[inline]
 		fn start_season(
 			weight: &mut Weight,
 			block_number: T::BlockNumber,
@@ -1233,6 +1206,7 @@ pub mod pallet {
 			}
 		}
 
+		#[inline]
 		fn finish_season(weight: &mut Weight, block_number: T::BlockNumber, season_id: SeasonId) {
 			let next_season_id = season_id.saturating_add(1);
 
