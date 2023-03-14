@@ -69,11 +69,30 @@ impl Default for MintType {
 	}
 }
 
+#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Copy, Clone, Debug, Eq, PartialEq)]
+pub enum PackType {
+	Material = 1,
+	Equipment = 2,
+	Special = 3,
+}
+
+impl Default for PackType {
+	fn default() -> Self {
+		PackType::Material
+	}
+}
+
+impl PackType {
+	// TODO: Define probabilities here? Or in the minter?
+}
+
 /// Minting options
 #[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, Debug, Default, Eq, PartialEq)]
 pub struct MintOption {
 	/// Type of minting.
 	pub mint_type: MintType,
+	/// Type of pack to mint
+	pub mint_pack: PackType,
 	/// Avatar version to mint
 	pub mint_version: AvatarVersion,
 	/// Number of avatars to mint.

@@ -397,7 +397,8 @@ mod test {
 					MintOption {
 						count: MintPackSize::Six,
 						mint_type: MintType::Free,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -498,7 +499,8 @@ mod test {
 					MintOption {
 						count: MintPackSize::Six,
 						mint_type: MintType::Free,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 

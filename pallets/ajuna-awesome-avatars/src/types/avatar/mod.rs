@@ -20,6 +20,7 @@ mod forge;
 mod mint;
 mod nft;
 mod rarity_tier;
+mod types;
 
 pub use avatar_codec::*;
 pub use force::*;

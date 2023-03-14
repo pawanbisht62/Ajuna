@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{types::avatar::forge::ForgeType, *};
 use sp_runtime::DispatchError;
 use sp_std::{marker::PhantomData, vec::Vec};
 
@@ -33,6 +33,19 @@ where
 	}
 
 	fn last_variation(&self, target: &Avatar) -> u8 {
+		todo!()
+	}
+}
+
+impl<'a, T> AvatarForgerV2<'a, T>
+where
+	T: Config,
+{
+	#[allow(unused_variables)]
+	fn determine_forge_type(
+		input_leader: &ForgeItem<T>,
+		input_sacrifices: &[ForgeItem<T>],
+	) -> ForgeType {
 		todo!()
 	}
 }

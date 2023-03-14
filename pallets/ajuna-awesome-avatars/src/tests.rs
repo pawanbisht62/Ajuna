@@ -955,7 +955,8 @@ mod minting {
 						MintOption {
 							count: MintPackSize::One,
 							mint_type: mint_type.clone(),
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 					match mint_type {
@@ -996,7 +997,8 @@ mod minting {
 						MintOption {
 							count: MintPackSize::Three,
 							mint_type: mint_type.clone(),
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 					match mint_type {
@@ -1034,7 +1036,8 @@ mod minting {
 						MintOption {
 							count: MintPackSize::Six,
 							mint_type: mint_type.clone(),
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 					match mint_type {
@@ -1077,7 +1080,8 @@ mod minting {
 								MintOption {
 									count: MintPackSize::One,
 									mint_type: mint_type.clone(),
-									mint_version: AvatarVersion::V1
+									mint_version: AvatarVersion::V1,
+									mint_pack: PackType::default(),
 								}
 							));
 							minted_count += 1;
@@ -1099,7 +1103,8 @@ mod minting {
 							MintOption {
 								count: MintPackSize::One,
 								mint_type: mint_type.clone(),
-								mint_version: AvatarVersion::V1
+								mint_version: AvatarVersion::V1,
+								mint_pack: PackType::default(),
 							}
 						),
 						Error::<Test>::SeasonClosed
@@ -1149,7 +1154,12 @@ mod minting {
 					assert_noop!(
 						AAvatars::mint(
 							RuntimeOrigin::signed(ALICE),
-							MintOption { count, mint_type, mint_version: AvatarVersion::V1 }
+							MintOption {
+								count,
+								mint_type,
+								mint_version: AvatarVersion::V1,
+								mint_pack: PackType::default(),
+							}
 						),
 						Error::<Test>::MintClosed
 					);
@@ -1166,7 +1176,12 @@ mod minting {
 					assert_noop!(
 						AAvatars::mint(
 							RuntimeOrigin::none(),
-							MintOption { count, mint_type, mint_version: AvatarVersion::V1 }
+							MintOption {
+								count,
+								mint_type,
+								mint_version: AvatarVersion::V1,
+								mint_pack: PackType::default(),
+							}
 						),
 						DispatchError::BadOrigin
 					);
@@ -1187,7 +1202,12 @@ mod minting {
 						assert_noop!(
 							AAvatars::mint(
 								RuntimeOrigin::signed(ALICE),
-								MintOption { count, mint_type, mint_version: AvatarVersion::V1 }
+								MintOption {
+									count,
+									mint_type,
+									mint_version: AvatarVersion::V1,
+									mint_pack: PackType::default(),
+								}
 							),
 							Error::<Test>::SeasonClosed
 						);
@@ -1222,7 +1242,12 @@ mod minting {
 						assert_noop!(
 							AAvatars::mint(
 								RuntimeOrigin::signed(ALICE),
-								MintOption { count, mint_type, mint_version: AvatarVersion::V1 }
+								MintOption {
+									count,
+									mint_type,
+									mint_version: AvatarVersion::V1,
+									mint_pack: PackType::default(),
+								}
 							),
 							Error::<Test>::MaxOwnershipReached
 						);
@@ -1250,7 +1275,8 @@ mod minting {
 						MintOption {
 							count: MintPackSize::One,
 							mint_type: mint_type.clone(),
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 
@@ -1262,7 +1288,8 @@ mod minting {
 								MintOption {
 									count: MintPackSize::One,
 									mint_type: mint_type.clone(),
-									mint_version: AvatarVersion::V1
+									mint_version: AvatarVersion::V1,
+									mint_pack: PackType::default(),
 								}
 							),
 							Error::<Test>::MintCooldown
@@ -1276,7 +1303,8 @@ mod minting {
 						MintOption {
 							count: MintPackSize::One,
 							mint_type: MintType::Normal,
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 
@@ -1301,7 +1329,8 @@ mod minting {
 						MintOption {
 							count: mint_count,
 							mint_type: MintType::Normal,
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					),
 					pallet_balances::Error::<Test>::InsufficientBalance
@@ -1315,7 +1344,8 @@ mod minting {
 						MintOption {
 							count: mint_count,
 							mint_type: MintType::Free,
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					),
 					Error::<Test>::InsufficientFreeMints
@@ -1456,7 +1486,8 @@ mod forging {
 					MintOption {
 						count: MintPackSize::Three,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 				assert_ok!(AAvatars::mint(
@@ -1464,7 +1495,8 @@ mod forging {
 					MintOption {
 						count: MintPackSize::One,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -1523,7 +1555,8 @@ mod forging {
 					MintOption {
 						count: MintPackSize::One,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 				let leader_id = AAvatars::owners(BOB)[0];
@@ -1581,7 +1614,8 @@ mod forging {
 						MintOption {
 							count: MintPackSize::One,
 							mint_type: MintType::Normal,
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					),
 					Error::<Test>::PrematureSeasonEnd
@@ -1694,7 +1728,8 @@ mod forging {
 					MintOption {
 						count: MintPackSize::Six,
 						mint_type: MintType::Free,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -1775,7 +1810,8 @@ mod forging {
 					MintOption {
 						count: MintPackSize::Six,
 						mint_type: MintType::Free,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -1832,7 +1868,8 @@ mod forging {
 					MintOption {
 						count: MintPackSize::Six,
 						mint_type: MintType::Free,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 				let leader_id = AAvatars::owners(ALICE)[0];
@@ -1948,7 +1985,8 @@ mod forging {
 						MintOption {
 							count: MintPackSize::Three,
 							mint_type: MintType::Free,
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 				}
@@ -2002,7 +2040,8 @@ mod forging {
 						MintOption {
 							count: MintPackSize::One,
 							mint_type: MintType::Free,
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 				}
@@ -2039,7 +2078,8 @@ mod forging {
 							MintOption {
 								count: MintPackSize::One,
 								mint_type: MintType::Free,
-								mint_version: AvatarVersion::V1
+								mint_version: AvatarVersion::V1,
+								mint_pack: PackType::default(),
 							}
 						));
 					}
@@ -2075,7 +2115,8 @@ mod forging {
 						MintOption {
 							count: MintPackSize::One,
 							mint_type: MintType::Free,
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 				}
@@ -2110,7 +2151,8 @@ mod forging {
 					MintOption {
 						count: MintPackSize::Six,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 				assert_ok!(AAvatars::mint(
@@ -2118,7 +2160,8 @@ mod forging {
 					MintOption {
 						count: MintPackSize::Six,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -2175,7 +2218,8 @@ mod forging {
 						MintOption {
 							count: MintPackSize::One,
 							mint_type: MintType::Free,
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 					run_to_block(System::block_number() + 1);
@@ -2188,7 +2232,8 @@ mod forging {
 						MintOption {
 							count: MintPackSize::One,
 							mint_type: MintType::Free,
-							mint_version: AvatarVersion::V1
+							mint_version: AvatarVersion::V1,
+							mint_pack: PackType::default(),
 						}
 					));
 					run_to_block(System::block_number() + 1);
@@ -2440,7 +2485,8 @@ mod trading {
 					MintOption {
 						count: MintPackSize::One,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -2493,7 +2539,8 @@ mod trading {
 					MintOption {
 						count: MintPackSize::One,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -2524,7 +2571,8 @@ mod trading {
 					MintOption {
 						count: MintPackSize::One,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -2578,7 +2626,8 @@ mod trading {
 					MintOption {
 						count: MintPackSize::One,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -2638,7 +2687,8 @@ mod trading {
 					MintOption {
 						count: MintPackSize::Three,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 				treasury_balance += mint_fees.three;
@@ -2782,7 +2832,8 @@ mod trading {
 					MintOption {
 						count: MintPackSize::One,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -2811,7 +2862,8 @@ mod trading {
 					MintOption {
 						count: MintPackSize::One,
 						mint_type: MintType::Free,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 
@@ -2916,7 +2968,8 @@ mod lock_avatar {
 					MintOption {
 						count: MintPackSize::Three,
 						mint_type: MintType::Normal,
-						mint_version: AvatarVersion::V1
+						mint_version: AvatarVersion::V1,
+						mint_pack: PackType::default(),
 					}
 				));
 				let avatar_ids = AAvatars::owners(ALICE);

@@ -5,6 +5,58 @@ use sp_std::{boxed::Box, vec::Vec};
 mod v1;
 mod v2;
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(self) enum ByteType {
+	Full = 0b1111_1111,
+	High = 0b1111_0000,
+	Low = 0b0000_1111,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(self) enum HexType {
+	X0 = 0b0000,
+	X1 = 0b0001,
+	X2 = 0b0010,
+	X3 = 0b0011,
+	X4 = 0b0100,
+	X5 = 0b0101,
+	X6 = 0b0110,
+	X7 = 0b0111,
+	X8 = 0b1000,
+	X9 = 0b1001,
+	XA = 0b1010,
+	XB = 0b1011,
+	XC = 0b1100,
+	XD = 0b1101,
+	XE = 0b1110,
+	XF = 0b1111,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(self) enum NibbleType {
+	X0 = 0b0000,
+	X1 = 0b0001,
+	X2 = 0b0010,
+	X3 = 0b0011,
+	X4 = 0b0100,
+	X5 = 0b0101,
+	X6 = 0b0110,
+	X7 = 0b0111,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(self) enum ForgeType {
+	None = 0,
+	Stack = 1,
+	Tinker = 2,
+	Build = 3,
+	Assemble = 4,
+	Breed = 5,
+	Equipment = 6,
+	Mate = 7,
+	Special = 8,
+}
+
 /// Trait used to implement generic forging logic for an entity.
 pub(crate) trait ForgeProvider<T: Config> {
 	fn get_forger(&self) -> Box<dyn Forger<T>>;
