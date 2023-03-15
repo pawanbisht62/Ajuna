@@ -23,7 +23,7 @@ where
 		let max_tier = season.max_tier() as u8;
 		let current_block = <frame_system::Pallet<T>>::block_number();
 
-		let (sacrifice_ids, sacrifice_avatars): (Vec<AvatarIdOf<T>>, Vec<Dna>) =
+		let (sacrifice_ids, sacrifice_avatars): (Vec<AvatarIdOf<T>>, Vec<Avatar>) =
 			input_sacrifices.into_iter().unzip();
 
 		let (mut unique_matched_indexes, matches, soul_count) = self.compare_all(
@@ -85,11 +85,11 @@ where
 		))
 	}
 
-	fn min_tier(&self, target: &Dna) -> u8 {
+	fn min_tier(&self, target: &Avatar) -> u8 {
 		target.dna.iter().map(|x| *x >> 4).min().unwrap_or_default()
 	}
 
-	fn last_variation(&self, target: &Dna) -> u8 {
+	fn last_variation(&self, target: &Avatar) -> u8 {
 		target.dna.last().unwrap_or(&0) & 0b0000_1111
 	}
 }
@@ -100,8 +100,8 @@ where
 {
 	fn compare_all(
 		&self,
-		target: &Dna,
-		others: &[Dna],
+		target: &Avatar,
+		others: &[Avatar],
 		max_variations: u8,
 		max_tier: u8,
 	) -> Result<(BTreeSet<usize>, u8, SoulCount), DispatchError> {
@@ -127,7 +127,7 @@ where
 		)
 	}
 
-	fn upgradable_indexes_for_target(&self, target: &Dna) -> Result<Vec<usize>, DispatchError> {
+	fn upgradable_indexes_for_target(&self, target: &Avatar) -> Result<Vec<usize>, DispatchError> {
 		let min_tier = self.min_tier(target);
 		Ok(target
 			.dna
@@ -140,8 +140,8 @@ where
 
 	fn compare(
 		&self,
-		target: &Dna,
-		other: &Dna,
+		target: &Avatar,
+		other: &Avatar,
 		indexes: &[usize],
 		max_variations: u8,
 		max_tier: u8,
@@ -188,7 +188,7 @@ where
 
 	fn forge_probability(
 		&self,
-		target: &Dna,
+		target: &Avatar,
 		season: &SeasonOf<T>,
 		now: &T::BlockNumber,
 		matches: u8,
@@ -200,7 +200,7 @@ where
 				period_multiplier
 	}
 
-	fn forge_multiplier(&self, target: &Dna, season: &SeasonOf<T>, now: &T::BlockNumber) -> u8 {
+	fn forge_multiplier(&self, target: &Avatar, season: &SeasonOf<T>, now: &T::BlockNumber) -> u8 {
 		let mut current_period = season.current_period(now);
 		let mut last_variation = self.last_variation(target) as u16;
 
@@ -250,7 +250,7 @@ mod test {
 			.max_sacrifices(max_sacrifices)
 			.base_prob(0);
 
-		let avatar = Dna::default().dna(&[1, 3, 3, 7, 0]);
+		let avatar = Avatar::default().dna(&[1, 3, 3, 7, 0]);
 		let forger = AvatarForgerV1::<Test>(PhantomData);
 
 		// in period
@@ -330,7 +330,7 @@ mod test {
 			for now in range {
 				assert_eq!(season.current_period(&now), expected_period);
 
-				let avatar = Dna::default().dna(&dna);
+				let avatar = Avatar::default().dna(&dna);
 				let forger = AvatarForgerV1::<Test>(PhantomData);
 				assert_eq!(forger.forge_multiplier(&avatar, &season, &now), expected_multiplier);
 			}
@@ -355,10 +355,10 @@ mod test {
 			.per_period(20)
 			.periods(12);
 
-		let leader =
-			Dna::default().dna(&[0x21, 0x05, 0x23, 0x24, 0x20, 0x22, 0x25, 0x23, 0x05, 0x04, 0x02]);
-		let other =
-			Dna::default().dna(&[0x04, 0x00, 0x00, 0x04, 0x02, 0x04, 0x02, 0x00, 0x05, 0x05, 0x04]);
+		let leader = Avatar::default()
+			.dna(&[0x21, 0x05, 0x23, 0x24, 0x20, 0x22, 0x25, 0x23, 0x05, 0x04, 0x02]);
+		let other = Avatar::default()
+			.dna(&[0x04, 0x00, 0x00, 0x04, 0x02, 0x04, 0x02, 0x00, 0x05, 0x05, 0x04]);
 		let forger = AvatarForgerV1::<Test>(PhantomData);
 
 		assert_eq!(
@@ -407,7 +407,7 @@ mod test {
 				let leader_id = owned_avatar_ids[0];
 				let sacrifice_ids = &owned_avatar_ids[1..3];
 
-				let original_leader: Dna = AAvatars::avatars(leader_id).unwrap().1;
+				let original_leader: Avatar = AAvatars::avatars(leader_id).unwrap().1;
 				let original_sacrifices = sacrifice_ids
 					.iter()
 					.map(|id| AAvatars::avatars(id).unwrap().1)
@@ -509,7 +509,7 @@ mod test {
 				let leader_id = owned_avatar_ids[0];
 				let sacrifice_id = owned_avatar_ids[1];
 
-				let original_leader: Dna = AAvatars::avatars(leader_id).unwrap().1;
+				let original_leader: Avatar = AAvatars::avatars(leader_id).unwrap().1;
 				let original_sacrifice = AAvatars::avatars(sacrifice_id).unwrap().1;
 
 				assert_ok!(AAvatars::forge(

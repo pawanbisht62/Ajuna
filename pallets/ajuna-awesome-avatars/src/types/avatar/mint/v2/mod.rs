@@ -4,7 +4,7 @@ mod slot_roller;
 
 use crate::{
 	types::avatar::{
-		mint::v2::{constants::*, dna_mutator::DnaMutator, slot_roller::SlotRoller},
+		mint::v2::{constants::*, dna_mutator::AvatarMutator, slot_roller::SlotRoller},
 		types::ItemType,
 	},
 	*,
@@ -44,7 +44,7 @@ where
 		&self,
 		pack_type: PackType,
 		item_type: ItemType,
-	) -> Box<dyn DnaMutator<T>> {
+	) -> Box<dyn AvatarMutator<T>> {
 		match item_type {
 			ItemType::Pet => Box::new(SlotRoller::<T>::roll_on_pack_type(
 				pack_type,
@@ -106,13 +106,17 @@ where
 			let avatar_id = Pallet::<T>::random_hash(b"create_avatar", player);
 
 			let base_dna = self.generate_base_avatar_dna(player)?;
-			let dna = self
-				.get_mutator_from_item_type(mint_option.mint_pack, rolled_item_type)
-				.mutate_from_base(base_dna);
+			let base_avatar = Avatar {
+				season_id: *season_id,
+				version: mint_option.mint_version,
+				dna: base_dna,
+				souls: SoulCount::zero(),
+			};
 
-			let souls = (dna.iter().map(|x| *x as SoulCount).sum::<SoulCount>() % 100) + 1;
-			let avatar =
-				Dna { season_id: *season_id, version: mint_option.mint_version, dna, souls };
+			let avatar = self
+				.get_mutator_from_item_type(mint_option.mint_pack, rolled_item_type)
+				.mutate_from_base(base_avatar);
+
 			minted_avatars.push((avatar_id, avatar));
 		}
 

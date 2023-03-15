@@ -28,7 +28,7 @@ pub struct AvatarCodec {
 }
 
 impl AvatarCodec {
-	pub fn from<T: Config>(avatar: Dna) -> Self {
+	pub fn from<T: Config>(avatar: Avatar) -> Self {
 		let rarity_tier = RarityTier::try_from(avatar.min_tier::<T>()).unwrap_or_default();
 		let last_variation = Force::try_from(avatar.last_variation::<T>()).unwrap_or_default();
 
@@ -43,7 +43,7 @@ impl AvatarCodec {
 	}
 }
 
-impl From<AvatarCodec> for Dna {
+impl From<AvatarCodec> for Avatar {
 	fn from(avatar_codec: AvatarCodec) -> Self {
 		Self {
 			season_id: avatar_codec.season_id,

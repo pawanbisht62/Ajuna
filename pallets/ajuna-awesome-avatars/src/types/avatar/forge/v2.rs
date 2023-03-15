@@ -28,11 +28,11 @@ where
 		todo!()
 	}
 
-	fn min_tier(&self, target: &Dna) -> u8 {
+	fn min_tier(&self, target: &Avatar) -> u8 {
 		todo!()
 	}
 
-	fn last_variation(&self, target: &Dna) -> u8 {
+	fn last_variation(&self, target: &Avatar) -> u8 {
 		todo!()
 	}
 }
