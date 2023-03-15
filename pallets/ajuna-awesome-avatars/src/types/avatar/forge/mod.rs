@@ -85,7 +85,7 @@ where
 }
 
 /// A tuple containing and avatar identifier with its represented avatar, used as forging inputs.
-pub(crate) type ForgeItem<T> = (AvatarIdOf<T>, Avatar);
+pub(crate) type ForgeItem<T> = (AvatarIdOf<T>, Dna);
 /// Number of components upgraded after a forge in a given Avatar.
 pub(crate) type UpgradedComponents = u8;
 /// Enum used to express the possible results of the forge on the leader avatar.
@@ -103,7 +103,7 @@ pub(crate) enum ForgeOutput<T: Config> {
 	/// The avatar was forged (mutate) in some way.
 	Forged(ForgeItem<T>, UpgradedComponents),
 	/// A new avatar was created from the forging process.
-	Minted(Avatar),
+	Minted(Dna),
 	/// The avatar was consumed in the forging process.
 	Consumed(AvatarIdOf<T>),
 }
@@ -128,8 +128,8 @@ pub(crate) trait Forger<T: Config> {
 	) -> Result<(), DispatchError>;
 
 	/// Used to obtain the RarityTier of a given avatar as an u8.
-	fn min_tier(&self, target: &Avatar) -> u8;
+	fn min_tier(&self, target: &Dna) -> u8;
 
 	/// Used to get the ForceType of a given avatar as an u8.
-	fn last_variation(&self, target: &Avatar) -> u8;
+	fn last_variation(&self, target: &Dna) -> u8;
 }

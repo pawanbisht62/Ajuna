@@ -33,7 +33,7 @@ where
 }
 
 /// A tuple containing and avatar identifier with its represented avatar, returned as mint output.
-pub(crate) type MintOutput<T> = (AvatarIdOf<T>, Avatar);
+pub(crate) type MintOutput<T> = (AvatarIdOf<T>, Dna);
 
 pub(crate) trait Minter<T: Config> {
 	fn mint_avatar_set(

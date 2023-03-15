@@ -9,15 +9,17 @@ pub(crate) enum ItemType {
 	Special = 6,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum PetItemType {
+	#[default]
 	Pet = 1,
 	PetPart = 2,
 	Egg = 3,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum EquipableItemType {
+	#[default]
 	ArmorBase = 1,
 	ArmorComponent1 = 2,
 	ArmorComponent2 = 3,
@@ -76,8 +78,9 @@ pub(crate) enum SlotType {
 	WeaponBack = 9,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum MaterialItemType {
+	#[default]
 	Polymers = 1,
 	Electronics = 2,
 	PowerCells = 3,
@@ -88,19 +91,22 @@ pub(crate) enum MaterialItemType {
 	Nanomaterials = 8,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum EssenceItemType {
+	#[default]
 	Glimmer = 1,
 	ColorSpark = 2,
 	GlowSpark = 3,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum BlueprintItemType {
+	#[default]
 	Blueprint = 1,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum SpecialItemType {
+	#[default]
 	Special = 1,
 }

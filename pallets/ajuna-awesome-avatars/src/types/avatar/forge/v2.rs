@@ -28,11 +28,11 @@ where
 		todo!()
 	}
 
-	fn min_tier(&self, target: &Avatar) -> u8 {
+	fn min_tier(&self, target: &Dna) -> u8 {
 		todo!()
 	}
 
-	fn last_variation(&self, target: &Avatar) -> u8 {
+	fn last_variation(&self, target: &Dna) -> u8 {
 		todo!()
 	}
 }
@@ -46,6 +46,8 @@ where
 		input_leader: &ForgeItem<T>,
 		input_sacrifices: &[ForgeItem<T>],
 	) -> ForgeType {
+		// Inspect leader type, based on that forge type should be defined
+		// If mismatch logic to discard should be in each specific sub-forge method
 		todo!()
 	}
 }

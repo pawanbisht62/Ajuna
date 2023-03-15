@@ -45,14 +45,14 @@ pub enum AvatarVersion {
 }
 
 #[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, Debug, Default, PartialEq)]
-pub struct Avatar {
+pub struct Dna {
 	pub season_id: SeasonId,
 	pub version: AvatarVersion,
 	pub dna: Dna,
 	pub souls: SoulCount,
 }
 
-impl Avatar {
+impl Dna {
 	#[inline]
 	pub(crate) fn min_tier<T: Config>(&self) -> u8 {
 		self.version.with_forger(|forger: Box<dyn Forger<T>>| forger.min_tier(self))
@@ -71,7 +71,7 @@ mod test {
 	use crate::mock::*;
 	use pallet_ajuna_nft_transfer::traits::NftConvertible;
 
-	impl Avatar {
+	impl Dna {
 		pub(crate) fn season_id(mut self, season_id: SeasonId) -> Self {
 			self.season_id = season_id;
 			self
@@ -89,7 +89,7 @@ mod test {
 	#[test]
 	fn codec_works() {
 		let avatar_codec = AvatarCodec::from::<Test>(
-			Avatar::default().season_id(123).dna(&[0x31, 0x32, 0x33, 0x34]).souls(321),
+			Dna::default().season_id(123).dna(&[0x31, 0x32, 0x33, 0x34]).souls(321),
 		);
 		let encoded = avatar_codec.clone().encode_into();
 

@@ -22,7 +22,7 @@ fn create_avatars(account: MockAccountId, n: u8) -> Vec<AvatarIdOf<Test>> {
 	(0..n)
 		.into_iter()
 		.map(|i| {
-			let avatar = Avatar::default().season_id(1).dna(&[i; 32]);
+			let avatar = Dna::default().season_id(1).dna(&[i; 32]);
 			let avatar_id = H256::random();
 			Avatars::<Test>::insert(avatar_id, (account, avatar));
 			Owners::<Test>::try_append(account, avatar_id).unwrap();
@@ -1387,7 +1387,7 @@ mod forging {
 	use sp_runtime::testing::H256;
 
 	fn create_avatar(avatar_id_seed: u8, dna: &[u8]) -> AvatarIdOf<Test> {
-		let avatar = Avatar::default().season_id(1).dna(dna);
+		let avatar = Dna::default().season_id(1).dna(dna);
 		if avatar.min_tier::<Test>() == RarityTier::Legendary as u8 {
 			CurrentSeasonStatus::<Test>::mutate(|status| status.max_tier_avatars += 1);
 		}
@@ -1738,7 +1738,7 @@ mod forging {
 				let leader_id = owned_avatar_ids[0];
 				let sacrifice_ids = &owned_avatar_ids[1..3];
 
-				let original_leader: Avatar = AAvatars::avatars(leader_id).unwrap().1;
+				let original_leader: Dna = AAvatars::avatars(leader_id).unwrap().1;
 				let original_sacrifices = sacrifice_ids
 					.iter()
 					.map(|id| AAvatars::avatars(id).unwrap().1)
@@ -1820,7 +1820,7 @@ mod forging {
 				let leader_id = owned_avatar_ids[0];
 				let sacrifice_id = owned_avatar_ids[1];
 
-				let original_leader: Avatar = AAvatars::avatars(leader_id).unwrap().1;
+				let original_leader: Dna = AAvatars::avatars(leader_id).unwrap().1;
 				let original_sacrifice = AAvatars::avatars(sacrifice_id).unwrap().1;
 
 				assert_ok!(AAvatars::forge(
@@ -2981,10 +2981,10 @@ mod lock_avatar {
 					crate::Event::AvatarLocked { avatar_id, asset_id },
 				));
 
-				let (_, avatar): (_, Avatar) = AAvatars::avatars(avatar_id).unwrap();
+				let (_, avatar): (_, Dna) = AAvatars::avatars(avatar_id).unwrap();
 				assert_eq!(
 					avatar,
-					Avatar {
+					Dna {
 						season_id: 1,
 						version: AvatarVersion::V1,
 						dna: bounded_vec![0x02, 0x04, 0x00, 0x03, 0x01, 0x12, 0x00, 0x23],

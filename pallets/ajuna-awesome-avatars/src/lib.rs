@@ -158,7 +158,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn avatars)]
-	pub type Avatars<T: Config> = StorageMap<_, Identity, AvatarIdOf<T>, (T::AccountId, Avatar)>;
+	pub type Avatars<T: Config> = StorageMap<_, Identity, AvatarIdOf<T>, (T::AccountId, Dna)>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn owners)]
@@ -984,7 +984,7 @@ pub mod pallet {
 		fn ensure_ownership(
 			player: &T::AccountId,
 			avatar_id: &AvatarIdOf<T>,
-		) -> Result<Avatar, DispatchError> {
+		) -> Result<Dna, DispatchError> {
 			let (owner, avatar) = Self::avatars(avatar_id).ok_or(Error::<T>::UnknownAvatar)?;
 			ensure!(player == &owner, Error::<T>::Ownership);
 			Ok(avatar)
@@ -1014,7 +1014,7 @@ pub mod pallet {
 			sacrifice_ids: &[AvatarIdOf<T>],
 			season_id: &SeasonId,
 			season: &SeasonOf<T>,
-		) -> Result<(Avatar, BTreeSet<AvatarIdOf<T>>, Vec<Avatar>), DispatchError> {
+		) -> Result<(Dna, BTreeSet<AvatarIdOf<T>>, Vec<Dna>), DispatchError> {
 			let sacrifice_count = sacrifice_ids.len() as u8;
 			ensure!(sacrifice_count >= season.min_sacrifices, Error::<T>::TooFewSacrifices);
 			ensure!(sacrifice_count <= season.max_sacrifices, Error::<T>::TooManySacrifices);
@@ -1042,7 +1042,7 @@ pub mod pallet {
 					Self::ensure_unlocked(id)?;
 					Ok(avatar)
 				})
-				.collect::<Result<Vec<Avatar>, DispatchError>>()?;
+				.collect::<Result<Vec<Dna>, DispatchError>>()?;
 
 			Ok((leader, deduplicated_sacrifice_ids, sacrifices))
 		}
@@ -1153,7 +1153,7 @@ pub mod pallet {
 		fn try_add_avatar_to(
 			player: &AccountIdOf<T>,
 			avatar_id: AvatarIdOf<T>,
-			avatar: Avatar,
+			avatar: Dna,
 		) -> Result<(), DispatchError> {
 			Avatars::<T>::insert(avatar_id, (player, avatar));
 			Owners::<T>::try_append(&player, avatar_id)

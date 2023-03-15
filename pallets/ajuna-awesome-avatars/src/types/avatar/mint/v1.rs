@@ -21,7 +21,7 @@ where
 				let dna = self.random_dna(&avatar_id, season, is_batched)?;
 				let souls = (dna.iter().map(|x| *x as SoulCount).sum::<SoulCount>() % 100) + 1;
 				let avatar =
-					Avatar { season_id: *season_id, version: mint_option.mint_version, dna, souls };
+					Dna { season_id: *season_id, version: mint_option.mint_version, dna, souls };
 				Ok((avatar_id, avatar))
 			})
 			.collect::<Result<Vec<MintOutput<T>>, _>>()
