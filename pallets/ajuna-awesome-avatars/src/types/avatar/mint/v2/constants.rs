@@ -1,5 +1,7 @@
 use crate::types::avatar::{mint::v2::slot_roller::ProbabilitySlots, types::*};
 
+pub(crate) const MAX_QUANTITY: u8 = 8;
+
 // Probabilities for all PackType::Material options
 pub(crate) const PACK_TYPE_MATERIAL_ITEM_PROBABILITIES: ProbabilitySlots<ItemType, 6> = [
 	(ItemType::Pet, 150),
@@ -179,3 +181,27 @@ pub(crate) const PACK_TYPE_SPECIAL_SPECIAL_ITEM_TYPE_PROBABILITIES: ProbabilityS
 	1,
 > = [(SpecialItemType::Special, 1000)];
 // -----------------------------------------------
+
+// Probabilities for equipment slots
+pub(crate) const ARMOR_SLOT_PROBABILITIES: ProbabilitySlots<SlotType, 6> = [
+	(SlotType::Head, 170),
+	(SlotType::Breast, 170),
+	(SlotType::ArmFront, 165),
+	(SlotType::ArmBack, 165),
+	(SlotType::LegFront, 165),
+	(SlotType::LegBack, 165),
+];
+
+pub(crate) const WEAPON_SLOT_PROBABILITIES: ProbabilitySlots<SlotType, 2> =
+	[(SlotType::WeaponFront, 500), (SlotType::WeaponBack, 500)];
+
+// Probabilities for pet type
+pub(crate) const PET_TYPE_PROBABILITIES: ProbabilitySlots<PetType, 7> = [
+	(PetType::TankyBulldog, 150),
+	(PetType::FoxishDude, 150),
+	(PetType::WierdFerry, 150),
+	(PetType::FireDino, 150),
+	(PetType::BigHybrid, 150),
+	(PetType::GiantWoodStick, 150),
+	(PetType::CrazyDude, 100),
+];
