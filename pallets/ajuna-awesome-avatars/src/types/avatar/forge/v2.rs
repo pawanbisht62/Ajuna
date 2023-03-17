@@ -1,4 +1,7 @@
-use crate::{types::avatar::forge::ForgeType, *};
+use crate::{
+	types::avatar::{forge::ForgeType, types::ItemType},
+	*,
+};
 use sp_runtime::DispatchError;
 use sp_std::{marker::PhantomData, vec::Vec};
 
@@ -43,11 +46,43 @@ where
 {
 	#[allow(unused_variables)]
 	fn determine_forge_type(
-		input_leader: &ForgeItem<T>,
-		input_sacrifices: &[ForgeItem<T>],
+		input_leader: WrappedAvatar,
+		input_sacrifices: &[WrappedAvatar],
 	) -> ForgeType {
-		// Inspect leader type, based on that forge type should be defined
-		// If mismatch logic to discard should be in each specific sub-forge method
-		todo!()
+		// Extracting ItemType from the Avatar's DNA
+		match input_leader.read_attribute(AvatarAttributes::ItemType) {
+			// ItemType::Pet
+			1 => {
+				if input_sacrifices
+					.iter()
+					.all(|sacrifice| sacrifice.is_same_type_as(&input_leader))
+				{
+					ForgeType::Stack
+				} else {
+					ForgeType::None
+				}
+			},
+			// ItemType::Material
+			2 => {
+				if input_sacrifices
+					.iter()
+					.all(|sacrifice| sacrifice.is_same_type_as(&input_leader))
+				{
+					ForgeType::Stack
+				} else {
+					ForgeType::None
+				}
+			},
+			// ItemType::Essence
+			3 => ForgeType::None,
+			// ItemType::Equipable
+			4 => ForgeType::None,
+			// ItemType::Blueprint
+			5 => ForgeType::None,
+			// ItemType::Special
+			6 => ForgeType::None,
+			// Other non-match
+			_ => ForgeType::None,
+		}
 	}
 }
