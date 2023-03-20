@@ -48,12 +48,10 @@ where
 
 		let new_quantity = input_sacrifices
 			.iter()
-			.map(|sacrifice| {
-				AvatarWrapper::read_attribute(&sacrifice.1, AvatarAttributes::Quantity)
-			})
+			.map(|sacrifice| AvatarUtils::read_attribute(&sacrifice.1, AvatarAttributes::Quantity))
 			.reduce(|acc, qty| acc.saturating_add(qty))
 			.unwrap_or_default();
-		AvatarWrapper::write_attribute(&mut avatar, AvatarAttributes::Quantity, new_quantity);
+		AvatarUtils::write_attribute(&mut avatar, AvatarAttributes::Quantity, new_quantity);
 
 		let stack_probability = 12_u8/* Constants.StackProbabilities * 256 => StackProbabilities = 0.05; */;
 
@@ -69,10 +67,10 @@ where
 						let avatar = Avatar { season_id, version: AvatarVersion::V2, dna, souls };*/
 					},
 					Some(ref mut entry) => {
-						AvatarWrapper::write_attribute(
+						AvatarUtils::write_attribute(
 							entry,
 							AvatarAttributes::Quantity,
-							AvatarWrapper::read_attribute(entry, AvatarAttributes::Quantity)
+							AvatarUtils::read_attribute(entry, AvatarAttributes::Quantity)
 								.saturating_add(1),
 						);
 					},

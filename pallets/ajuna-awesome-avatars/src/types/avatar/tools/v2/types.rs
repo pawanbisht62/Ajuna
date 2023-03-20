@@ -1,3 +1,7 @@
+pub(crate) trait IntoBytes {
+	fn into_bytes(self) -> u8;
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ByteType {
 	Full = 0b1111_1111,
@@ -25,6 +29,12 @@ pub(crate) enum HexType {
 	XF = 0b1111,
 }
 
+impl IntoBytes for HexType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum NibbleType {
 	X0 = 0b0000,
@@ -35,6 +45,12 @@ pub(crate) enum NibbleType {
 	X5 = 0b0101,
 	X6 = 0b0110,
 	X7 = 0b0111,
+}
+
+impl IntoBytes for NibbleType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -48,12 +64,24 @@ pub(crate) enum ItemType {
 	Special = 6,
 }
 
+impl IntoBytes for ItemType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum PetItemType {
 	#[default]
 	Pet = 1,
 	PetPart = 2,
 	Egg = 3,
+}
+
+impl IntoBytes for PetItemType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -66,6 +94,12 @@ pub(crate) enum EquipableItemType {
 	WeaponVersion1 = 5,
 	WeaponVersion2 = 6,
 	WeaponVersion3 = 7,
+}
+
+impl IntoBytes for EquipableItemType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
 }
 
 impl EquipableItemType {
@@ -95,6 +129,12 @@ pub(crate) enum PetType {
 	CrazyDude = 7,
 }
 
+impl IntoBytes for PetType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum PetPartType {
 	#[default]
@@ -105,6 +145,12 @@ pub(crate) enum PetPartType {
 	Claws = 5,
 	Sticks = 6,
 	Eyes = 7,
+}
+
+impl IntoBytes for PetPartType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -120,6 +166,12 @@ pub(crate) enum SlotType {
 	WeaponBack = 9,
 }
 
+impl IntoBytes for SlotType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum MaterialItemType {
 	#[default]
@@ -133,6 +185,12 @@ pub(crate) enum MaterialItemType {
 	Nanomaterials = 8,
 }
 
+impl IntoBytes for MaterialItemType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum EssenceItemType {
 	#[default]
@@ -141,14 +199,32 @@ pub(crate) enum EssenceItemType {
 	GlowSpark = 3,
 }
 
+impl IntoBytes for EssenceItemType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum BlueprintItemType {
 	#[default]
 	Blueprint = 1,
 }
 
+impl IntoBytes for BlueprintItemType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum SpecialItemType {
 	#[default]
 	Special = 1,
+}
+
+impl IntoBytes for SpecialItemType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
 }

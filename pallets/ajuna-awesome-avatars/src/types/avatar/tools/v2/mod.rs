@@ -1,16 +1,16 @@
 mod avatar_combinator;
 mod avatar_mutator;
+mod avatar_utils;
 mod constants;
 mod slot_roller;
 mod types;
-mod wrapped_avatar;
 
 pub(self) use avatar_combinator::*;
 pub(self) use avatar_mutator::*;
+pub(self) use avatar_utils::*;
 pub(self) use constants::*;
 pub(self) use slot_roller::*;
 pub(self) use types::*;
-pub(self) use wrapped_avatar::*;
 
 use super::*;
 use crate::{
@@ -201,12 +201,12 @@ where
 		input_sacrifices: &[&Avatar],
 	) -> ForgeType {
 		// Extracting ItemType from the Avatar's DNA
-		match AvatarWrapper::read_attribute(input_leader, AvatarAttributes::ItemType) {
+		match AvatarUtils::read_attribute(input_leader, AvatarAttributes::ItemType) {
 			// ItemType::Pet
 			1 => {
 				if input_sacrifices
 					.iter()
-					.all(|sacrifice| AvatarWrapper::is_same_type_as(input_leader, sacrifice))
+					.all(|sacrifice| AvatarUtils::is_same_type_as(input_leader, sacrifice))
 				{
 					ForgeType::Stack
 				} else {
@@ -217,7 +217,7 @@ where
 			2 => {
 				if input_sacrifices
 					.iter()
-					.all(|sacrifice| AvatarWrapper::is_same_type_as(input_leader, sacrifice))
+					.all(|sacrifice| AvatarUtils::is_same_type_as(input_leader, sacrifice))
 				{
 					ForgeType::Stack
 				} else {

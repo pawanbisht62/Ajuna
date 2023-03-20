@@ -1,4 +1,5 @@
-use crate::types::{avatar::tools::v2::types::ByteType, Avatar};
+use super::{types::*, ByteType};
+use crate::types::{Avatar, AvatarVersion, Dna, SeasonId, SoulCount};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AvatarAttributes {
@@ -32,11 +33,96 @@ pub enum AvatarSpecBytes {
 	SpecByte16,
 }
 
+pub(crate) struct AvatarBuilder {
+	inner: Avatar,
+}
+
+impl AvatarBuilder {
+	pub fn with_dna(season_id: SeasonId, dna: Dna) -> Self {
+		Self { inner: Avatar { season_id, version: AvatarVersion::V2, dna, souls: 0 } }
+	}
+
+	pub fn with_base_avatar(avatar: Avatar) -> Self {
+		Self { inner: avatar }
+	}
+
+	pub fn with_attribute<T>(mut self, attribute: AvatarAttributes, value: T) -> Self
+	where
+		T: IntoBytes,
+	{
+		self.with_attribute_raw(attribute, value.into_bytes())
+	}
+
+	pub fn with_attribute_raw(mut self, attribute: AvatarAttributes, value: u8) -> Self {
+		AvatarUtils::write_attribute(&mut self.inner, attribute, value);
+		self
+	}
+
+	pub fn with_spec_byte(mut self, spec_byte: AvatarSpecBytes, value: u8) -> Self {
+		AvatarUtils::write_spec_byte(&mut self.inner, spec_byte, value);
+		self
+	}
+
+	pub fn with_soul_count(mut self, soul_count: SoulCount) -> Self {
+		self.inner.souls = soul_count;
+		self
+	}
+
+	pub fn with_progress_array(mut self, progress_array: [u8; 11]) -> Self {
+		AvatarUtils::write_progress_array(&mut self.inner, progress_array);
+		self
+	}
+
+	pub fn add_quantity(mut self, quantity: u8) -> Self {
+		let current_quantity = AvatarUtils::read_attribute(&self.inner, AvatarAttributes::Quantity);
+		AvatarUtils::write_attribute(
+			&mut self.inner,
+			AvatarAttributes::Quantity,
+			current_quantity.saturating_add(quantity),
+		);
+		self
+	}
+
+	pub fn into_pet(mut self, pet_type: PetItemType) -> Self {
+		self.with_attribute(AvatarAttributes::ItemType, ItemType::Pet)
+			.with_attribute(AvatarAttributes::ItemSubType, pet_type)
+	}
+
+	pub fn into_material(mut self, material_type: MaterialItemType) -> Self {
+		self.with_attribute(AvatarAttributes::ItemType, ItemType::Material)
+			.with_attribute(AvatarAttributes::ItemSubType, material_type)
+	}
+
+	pub fn into_essence(mut self, essence_type: EssenceItemType) -> Self {
+		self.with_attribute(AvatarAttributes::ItemType, ItemType::Essence)
+			.with_attribute(AvatarAttributes::ItemSubType, essence_type)
+	}
+
+	pub fn into_equipable(mut self, equipable_type: EquipableItemType) -> Self {
+		self.with_attribute(AvatarAttributes::ItemType, ItemType::Equipable)
+			.with_attribute(AvatarAttributes::ItemSubType, equipable_type)
+	}
+
+	pub fn into_blueprint(mut self, blueprint_type: BlueprintItemType) -> Self {
+		self.with_attribute(AvatarAttributes::ItemType, ItemType::Blueprint)
+			.with_attribute(AvatarAttributes::ItemSubType, blueprint_type)
+	}
+
+	pub fn into_special(mut self, special_type: SpecialItemType) -> Self {
+		self.with_attribute(AvatarAttributes::ItemType, ItemType::Special)
+			.with_attribute(AvatarAttributes::ItemSubType, special_type)
+	}
+
+	pub fn build(self) -> Avatar {
+		self.inner
+	}
+}
+
 /// Struct to wrap DNA interactions with Avatars from V2 upwards.
 /// Don't use with Avatars with V1.
-pub(crate) struct AvatarWrapper;
+pub(crate) struct AvatarUtils;
 
-impl AvatarWrapper {
+impl AvatarUtils {
 	pub fn is_same_type_as(avatar: &Avatar, other: &Avatar) -> bool {
 		Self::read_attribute(avatar, AvatarAttributes::ItemType) ==
 			Self::read_attribute(other, AvatarAttributes::ItemType)
