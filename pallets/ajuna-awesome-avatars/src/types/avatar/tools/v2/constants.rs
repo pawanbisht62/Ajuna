@@ -1,8 +1,8 @@
-use crate::types::avatar::{mint::v2::slot_roller::ProbabilitySlots, types::*};
+use super::*;
 
 pub(crate) const MAX_QUANTITY: u8 = 8;
 
-// Probabilities for all PackType::Material options
+/// Probabilities for all PackType::Material options
 pub(crate) const PACK_TYPE_MATERIAL_ITEM_PROBABILITIES: ProbabilitySlots<ItemType, 6> = [
 	(ItemType::Pet, 150),
 	(ItemType::Material, 700),
@@ -62,7 +62,7 @@ pub(crate) const PACK_TYPE_MATERIAL_SPECIAL_ITEM_TYPE_PROBABILITIES: Probability
 > = [(SpecialItemType::Special, 1000)];
 // -----------------------------------------------
 
-// Probabilities for all PackType::Equipment options
+/// Probabilities for all PackType::Equipment options
 pub(crate) const PACK_TYPE_EQUIPMENT_ITEM_PROBABILITIES: ProbabilitySlots<ItemType, 6> = [
 	(ItemType::Pet, 90),
 	(ItemType::Material, 200),
@@ -122,7 +122,7 @@ pub(crate) const PACK_TYPE_EQUIPMENT_SPECIAL_ITEM_TYPE_PROBABILITIES: Probabilit
 > = [(SpecialItemType::Special, 1000)];
 // -----------------------------------------------
 
-// Probabilities for all PackType::Special options
+/// Probabilities for all PackType::Special options
 pub(crate) const PACK_TYPE_SPECIAL_ITEM_PROBABILITIES: ProbabilitySlots<ItemType, 6> = [
 	(ItemType::Pet, 100),
 	(ItemType::Material, 150),
@@ -182,7 +182,7 @@ pub(crate) const PACK_TYPE_SPECIAL_SPECIAL_ITEM_TYPE_PROBABILITIES: ProbabilityS
 > = [(SpecialItemType::Special, 1000)];
 // -----------------------------------------------
 
-// Probabilities for equipment slots
+/// Probabilities for equipment slots
 pub(crate) const ARMOR_SLOT_PROBABILITIES: ProbabilitySlots<SlotType, 6> = [
 	(SlotType::Head, 170),
 	(SlotType::Breast, 170),
@@ -195,7 +195,7 @@ pub(crate) const ARMOR_SLOT_PROBABILITIES: ProbabilitySlots<SlotType, 6> = [
 pub(crate) const WEAPON_SLOT_PROBABILITIES: ProbabilitySlots<SlotType, 2> =
 	[(SlotType::WeaponFront, 500), (SlotType::WeaponBack, 500)];
 
-// Probabilities for pet type
+/// Probabilities for pet type
 pub(crate) const PET_TYPE_PROBABILITIES: ProbabilitySlots<PetType, 7> = [
 	(PetType::TankyBulldog, 150),
 	(PetType::FoxishDude, 150),

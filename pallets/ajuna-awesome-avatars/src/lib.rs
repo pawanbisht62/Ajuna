@@ -369,6 +369,8 @@ pub mod pallet {
 		CannotClaimDuringSeason,
 		/// Tried claiming treasury which is zero.
 		CannotClaimZero,
+		/// The components tried to forge were not compatible.
+		InvalidForgeComponents,
 	}
 
 	#[pallet::hooks]
@@ -927,8 +929,13 @@ pub mod pallet {
 			let input_leader = (*leader_id, leader);
 			let input_sacrifices =
 				sacrifice_ids.into_iter().zip(sacrifices).collect::<Vec<ForgeItem<T>>>();
-			let (output_leader, output_other) =
-				forger.forge_with(player, input_leader.clone(), input_sacrifices, &season)?;
+			let (output_leader, output_other) = forger.forge_with(
+				player,
+				season_id,
+				&season,
+				input_leader.clone(),
+				input_sacrifices,
+			)?;
 
 			Self::process_leader_forge_output(player, &season, input_leader, output_leader)?;
 			Self::process_other_forge_outputs(player, &season, output_other)?;

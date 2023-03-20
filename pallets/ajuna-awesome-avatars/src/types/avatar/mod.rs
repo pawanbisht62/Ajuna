@@ -16,20 +16,15 @@
 
 mod avatar_codec;
 mod force;
-mod forge;
-mod mint;
 mod nft;
 mod rarity_tier;
-mod types;
-mod wrapped_avatar;
+mod tools;
 
 pub use avatar_codec::*;
 pub use force::*;
-pub(crate) use forge::*;
-pub(crate) use mint::*;
 pub use nft::*;
 pub use rarity_tier::*;
-pub(crate) use wrapped_avatar::*;
+pub(crate) use tools::*;
 
 use crate::Config;
 use frame_support::pallet_prelude::*;

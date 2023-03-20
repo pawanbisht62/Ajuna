@@ -1,19 +1,28 @@
+mod avatar_combinator;
+mod avatar_mutator;
 mod constants;
-mod dna_mutator;
 mod slot_roller;
+mod types;
+mod wrapped_avatar;
 
+pub(self) use avatar_combinator::*;
+pub(self) use avatar_mutator::*;
+pub(self) use constants::*;
+pub(self) use slot_roller::*;
+pub(self) use types::*;
+pub(self) use wrapped_avatar::*;
+
+use super::*;
 use crate::{
-	types::avatar::{
-		mint::v2::{constants::*, dna_mutator::AvatarMutator, slot_roller::SlotRoller},
-		types::ItemType,
-	},
-	*,
+	pallet::SeasonOf,
+	types::{MintOption, SeasonId},
+	Config,
 };
 use sp_runtime::DispatchError;
+use sp_std::marker::PhantomData;
 
-pub(crate) struct AvatarMinterV2<'a, T: Config>(pub PhantomData<&'a T>);
+pub(super) struct AvatarMinterV2<'a, T: Config>(pub PhantomData<&'a T>);
 
-#[allow(unused_variables)]
 impl<'a, T> Minter<T> for AvatarMinterV2<'a, T>
 where
 	T: Config,
@@ -121,5 +130,110 @@ where
 		}
 
 		Ok(minted_avatars)
+	}
+}
+
+pub(crate) struct AvatarForgerV2<'a, T: Config>(pub PhantomData<&'a T>);
+
+impl<'a, T> Forger<T> for AvatarForgerV2<'a, T>
+where
+	T: Config,
+{
+	fn forge_with(
+		&self,
+		player: &T::AccountId,
+		season_id: SeasonId,
+		season: &SeasonOf<T>,
+		input_leader: ForgeItem<T>,
+		input_sacrifices: Vec<ForgeItem<T>>,
+	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
+		let forge_type = self.can_be_forged(season, &input_leader, &input_sacrifices)?;
+
+		AvatarCombinator::<T>::combine_avatars_in(
+			forge_type,
+			player,
+			season_id,
+			season,
+			input_leader,
+			input_sacrifices,
+		)
+	}
+
+	fn can_be_forged(
+		&self,
+		season: &SeasonOf<T>,
+		input_leader: &ForgeItem<T>,
+		input_sacrifices: &[ForgeItem<T>],
+	) -> Result<ForgeType, DispatchError> {
+		if input_sacrifices
+			.iter()
+			.all(|(_, avatar)| avatar.version == input_leader.1.version)
+		{
+			let leader = &input_leader.1;
+			let sacrifices: Vec<&Avatar> =
+				input_sacrifices.iter().map(|sacrifice| &sacrifice.1).collect();
+
+			match self.determine_forge_type(leader, sacrifices.as_slice()) {
+				ForgeType::None => Err(Error::<T>::InvalidForgeComponents.into()),
+				other => Ok(other),
+			}
+		} else {
+			Err(Error::<T>::IncompatibleAvatarVersions.into())
+		}
+	}
+
+	fn min_tier(&self, target: &Avatar) -> u8 {
+		todo!()
+	}
+
+	fn last_variation(&self, target: &Avatar) -> u8 {
+		todo!()
+	}
+}
+
+impl<'a, T> AvatarForgerV2<'a, T>
+where
+	T: Config,
+{
+	fn determine_forge_type(
+		&self,
+		input_leader: &Avatar,
+		input_sacrifices: &[&Avatar],
+	) -> ForgeType {
+		// Extracting ItemType from the Avatar's DNA
+		match AvatarWrapper::read_attribute(input_leader, AvatarAttributes::ItemType) {
+			// ItemType::Pet
+			1 => {
+				if input_sacrifices
+					.iter()
+					.all(|sacrifice| AvatarWrapper::is_same_type_as(input_leader, sacrifice))
+				{
+					ForgeType::Stack
+				} else {
+					ForgeType::None
+				}
+			},
+			// ItemType::Material
+			2 => {
+				if input_sacrifices
+					.iter()
+					.all(|sacrifice| AvatarWrapper::is_same_type_as(input_leader, sacrifice))
+				{
+					ForgeType::Stack
+				} else {
+					ForgeType::None
+				}
+			},
+			// ItemType::Essence
+			3 => ForgeType::None,
+			// ItemType::Equipable
+			4 => ForgeType::None,
+			// ItemType::Blueprint
+			5 => ForgeType::None,
+			// ItemType::Special
+			6 => ForgeType::None,
+			// Other non-match
+			_ => ForgeType::None,
+		}
 	}
 }

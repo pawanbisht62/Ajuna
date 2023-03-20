@@ -1,6 +1,6 @@
 use crate::{types::PackType, Config};
 use frame_support::traits::Randomness;
-use std::marker::PhantomData;
+use sp_std::marker::PhantomData;
 
 /// Represents a ‰ value, which goes from 1 to 1000
 pub type SlotPerMille = u32;
