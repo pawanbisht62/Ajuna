@@ -123,9 +123,22 @@ impl AvatarBuilder {
 pub(crate) struct AvatarUtils;
 
 impl AvatarUtils {
-	pub fn is_same_type_as(avatar: &Avatar, other: &Avatar) -> bool {
-		Self::read_attribute(avatar, AvatarAttributes::ItemType) ==
-			Self::read_attribute(other, AvatarAttributes::ItemType)
+	pub fn has_attribute_with_same_value_as(
+		avatar: &Avatar,
+		other: &Avatar,
+		attribute: AvatarAttributes,
+	) -> bool {
+		Self::read_attribute(avatar, attribute) == Self::read_attribute(other, attribute)
+	}
+
+	pub fn has_attribute_set_with_same_values_as(
+		avatar: &Avatar,
+		other: &Avatar,
+		attribute_set: &[AvatarAttributes],
+	) -> bool {
+		attribute_set
+			.iter()
+			.all(|attribute| Self::has_attribute_with_same_value_as(avatar, other, *attribute))
 	}
 
 	fn read_dna_strand(avatar: &Avatar, position: usize, byte_type: ByteType) -> u8 {
@@ -146,6 +159,28 @@ impl AvatarUtils {
 				avatar.dna[position] = (avatar.dna[position] & (ByteType::Low as u8)) |
 					(value & (ByteType::High as u8)),
 		}
+	}
+
+	pub fn has_attribute_with_value<T>(
+		avatar: &Avatar,
+		attribute: AvatarAttributes,
+		value: T,
+	) -> bool
+	where
+		T: IntoBytes,
+	{
+		Self::read_attribute(avatar, attribute) == value.into_bytes()
+	}
+
+	pub fn has_attribute_with_value_lower_than<T>(
+		avatar: &Avatar,
+		attribute: AvatarAttributes,
+		lower_than: T,
+	) -> bool
+	where
+		T: IntoBytes,
+	{
+		Self::read_attribute(avatar, attribute) < lower_than.into_bytes()
 	}
 
 	pub fn read_attribute(avatar: &Avatar, attribute: AvatarAttributes) -> u8 {

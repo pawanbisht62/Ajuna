@@ -27,7 +27,7 @@ where
 				Self::assemble_avatars(player, input_leader, input_sacrifices, season_id, season),
 			ForgeType::Breed =>
 				Self::breed_avatars(player, input_leader, input_sacrifices, season_id, season),
-			ForgeType::Equipment =>
+			ForgeType::Equip =>
 				Self::equipment_avatars(player, input_leader, input_sacrifices, season_id, season),
 			ForgeType::Mate =>
 				Self::mate_avatars(player, input_leader, input_sacrifices, season_id, season),

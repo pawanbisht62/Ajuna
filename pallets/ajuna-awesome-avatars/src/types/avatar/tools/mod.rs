@@ -53,7 +53,7 @@ pub(crate) enum ForgeType {
 	Build = 3,
 	Assemble = 4,
 	Breed = 5,
-	Equipment = 6,
+	Equip = 6,
 	Mate = 7,
 	Special = 8,
 }

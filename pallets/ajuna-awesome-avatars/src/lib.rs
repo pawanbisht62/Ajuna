@@ -371,6 +371,10 @@ pub mod pallet {
 		CannotClaimZero,
 		/// The components tried to forge were not compatible.
 		InvalidForgeComponents,
+		/// The amount of sacrifices is not sufficient for forging.
+		InsufficientSacrifices,
+		/// The amount of sacrifices is too much for forging.
+		ExcessiveSacrifices,
 	}
 
 	#[pallet::hooks]

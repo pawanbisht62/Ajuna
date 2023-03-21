@@ -71,6 +71,23 @@ impl IntoBytes for ItemType {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub(crate) enum RarityType {
+	#[default]
+	Common = 1,
+	Uncommon = 2,
+	Rare = 3,
+	Epic = 4,
+	Legendary = 5,
+	Mythical = 6,
+}
+
+impl IntoBytes for RarityType {
+	fn into_bytes(self) -> u8 {
+		self as u8
+	}
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum PetItemType {
 	#[default]
 	Pet = 1,
@@ -103,6 +120,19 @@ impl IntoBytes for EquipableItemType {
 }
 
 impl EquipableItemType {
+	pub fn from_bytes(value: u8) -> Self {
+		match value {
+			1 => EquipableItemType::ArmorBase,
+			2 => EquipableItemType::ArmorComponent1,
+			3 => EquipableItemType::ArmorComponent2,
+			4 => EquipableItemType::ArmorComponent3,
+			5 => EquipableItemType::WeaponVersion1,
+			6 => EquipableItemType::WeaponVersion2,
+			7 => EquipableItemType::WeaponVersion3,
+			_ => Self::default(),
+		}
+	}
+
 	pub fn is_armor(item: EquipableItemType) -> bool {
 		item == EquipableItemType::ArmorBase ||
 			item == EquipableItemType::ArmorComponent1 ||
