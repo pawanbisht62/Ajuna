@@ -1,5 +1,5 @@
 use super::*;
-use sp_runtime::{DispatchError, SaturatedConversion};
+use sp_runtime::DispatchError;
 use std::marker::PhantomData;
 
 pub(crate) struct AvatarCombinator<'a, T: Config>(pub PhantomData<&'a T>);
@@ -46,45 +46,49 @@ where
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		let (avatar_id, mut avatar) = input_leader;
 
-		let new_quantity = input_sacrifices
+		let (new_quantity, new_souls) = input_sacrifices
 			.iter()
-			.map(|sacrifice| AvatarUtils::read_attribute(&sacrifice.1, AvatarAttributes::Quantity))
-			.reduce(|acc, qty| acc.saturating_add(qty))
+			.map(|sacrifice| {
+				(
+					AvatarUtils::read_attribute(&sacrifice.1, AvatarAttributes::Quantity),
+					sacrifice.1.souls,
+				)
+			})
+			.reduce(|(acc_qty, acc_souls), (qty, souls)| {
+				(acc_qty.saturating_add(qty), acc_souls.saturating_add(souls))
+			})
 			.unwrap_or_default();
 		AvatarUtils::write_attribute(&mut avatar, AvatarAttributes::Quantity, new_quantity);
-
-		let stack_probability = 12_u8/* Constants.StackProbabilities * 256 => StackProbabilities = 0.05; */;
 
 		let mut essence_avatar: Option<Avatar> = None;
 
 		for i in 0..input_sacrifices.len() {
-			if stack_probability > avatar.dna[i] {
-				match essence_avatar {
+			if STACK_PROBABILITY > avatar.dna[i] {
+				essence_avatar = match essence_avatar {
 					None => {
-						/*let dna = self.random_dna(&avatar_id, season, is_batched)?;
-						let souls =
-							(dna.iter().map(|x| *x as SoulCount).sum::<SoulCount>() % 100) + 1;
-						let avatar = Avatar { season_id, version: AvatarVersion::V2, dna, souls };*/
+						let dna =
+							AvatarMinterV2::<T>(PhantomData).generate_base_avatar_dna(player)?;
+						Some(
+							AvatarBuilder::with_dna(season_id, dna)
+								.into_essence(EssenceItemType::Glimmer, 1)
+								.build(),
+						)
 					},
-					Some(ref mut entry) => {
-						AvatarUtils::write_attribute(
-							entry,
-							AvatarAttributes::Quantity,
-							AvatarUtils::read_attribute(entry, AvatarAttributes::Quantity)
-								.saturating_add(1),
-						);
-					},
+					Some(entry) =>
+						Some(AvatarBuilder::with_base_avatar(entry).add_quantity(1).build()),
 				}
 			}
 		}
 
-		avatar.souls += input_sacrifices
-			.into_iter()
-			.map(|sacrifice| sacrifice.1.souls)
-			.reduce(|acc, qty| acc.saturating_add(qty))
-			.unwrap_or_default();
+		avatar.souls += new_souls;
 
-		Ok((LeaderForgeOutput::Forged((avatar_id, avatar), 0), vec![]))
+		let output_vec: Vec<ForgeOutput<T>> = input_sacrifices
+			.into_iter()
+			.map(|(sacrifice_id, _)| ForgeOutput::Consumed(sacrifice_id))
+			.chain(essence_avatar.map(|minted_avatar| ForgeOutput::Minted(minted_avatar)))
+			.collect();
+
+		Ok((LeaderForgeOutput::Forged((avatar_id, avatar), 0), output_vec))
 	}
 
 	fn tinker_avatars(

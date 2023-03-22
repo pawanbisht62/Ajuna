@@ -122,14 +122,7 @@ where
 	T: Config,
 {
 	fn mutate_from_base(&self, mut base_avatar: Avatar) -> Avatar {
-		let quantity = MutatorUtils::random_quantity_from_dna_strands(&base_avatar.dna[5..9]);
-
-		AvatarBuilder::with_base_avatar(base_avatar)
-			.into_essence(*self)
-			.with_attribute(AvatarAttributes::CustomType1, HexType::X1)
-			.with_attribute_raw(AvatarAttributes::Quantity, quantity)
-			.with_soul_count(quantity as u32 * HexType::X1 as u32)
-			.build()
+		AvatarBuilder::with_base_avatar(base_avatar).into_essence(*self, 1).build()
 	}
 }
 

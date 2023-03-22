@@ -42,7 +42,10 @@ impl<'a, T> AvatarMinterV2<'a, T>
 where
 	T: Config,
 {
-	fn generate_base_avatar_dna(&self, player: &T::AccountId) -> Result<Dna, DispatchError> {
+	pub(super) fn generate_base_avatar_dna(
+		&self,
+		player: &T::AccountId,
+	) -> Result<Dna, DispatchError> {
 		let base_hash = Pallet::<T>::random_hash(b"mint_avatar_v2", player);
 
 		Dna::try_from(base_hash.as_ref()[0..32].to_vec())

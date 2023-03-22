@@ -2,6 +2,9 @@ use super::*;
 
 pub(crate) const MAX_QUANTITY: u8 = 8;
 
+// This value comes from the following calculation -> 256 * 0.05 -> 12.8 -> 13
+pub(crate) const STACK_PROBABILITY: u8 = 13;
+
 /// Probabilities for all PackType::Material options
 pub(crate) const PACK_TYPE_MATERIAL_ITEM_PROBABILITIES: ProbabilitySlots<ItemType, 6> = [
 	(ItemType::Pet, 150),

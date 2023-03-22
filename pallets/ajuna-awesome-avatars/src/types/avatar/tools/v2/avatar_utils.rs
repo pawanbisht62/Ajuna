@@ -93,9 +93,16 @@ impl AvatarBuilder {
 			.with_attribute(AvatarAttributes::ItemSubType, material_type)
 	}
 
-	pub fn into_essence(mut self, essence_type: EssenceItemType) -> Self {
+	pub fn into_essence(mut self, essence_type: EssenceItemType, quantity: u8) -> Self {
 		self.with_attribute(AvatarAttributes::ItemType, ItemType::Essence)
 			.with_attribute(AvatarAttributes::ItemSubType, essence_type)
+			.with_attribute(AvatarAttributes::ClassType1, HexType::X0)
+			.with_attribute(AvatarAttributes::ClassType2, HexType::X0)
+			.with_attribute(AvatarAttributes::CustomType1, HexType::X1)
+			.with_attribute(AvatarAttributes::CustomType2, HexType::X0)
+			.with_attribute(AvatarAttributes::RarityType, RarityType::Uncommon)
+			.with_attribute_raw(AvatarAttributes::Quantity, quantity)
+			.with_soul_count(quantity as u32 * HexType::X1 as u32)
 	}
 
 	pub fn into_equipable(mut self, equipable_type: EquipableItemType) -> Self {
