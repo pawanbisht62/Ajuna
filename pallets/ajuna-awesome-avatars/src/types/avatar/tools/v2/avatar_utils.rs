@@ -48,9 +48,9 @@ impl AvatarBuilder {
 
 	pub fn with_attribute<T>(mut self, attribute: AvatarAttributes, value: T) -> Self
 	where
-		T: IntoBytes,
+		T: IntoByte,
 	{
-		self.with_attribute_raw(attribute, value.into_bytes())
+		self.with_attribute_raw(attribute, value.into_byte())
 	}
 
 	pub fn with_attribute_raw(mut self, attribute: AvatarAttributes, value: u8) -> Self {
@@ -167,9 +167,9 @@ impl AvatarUtils {
 		value: T,
 	) -> bool
 	where
-		T: IntoBytes,
+		T: IntoByte,
 	{
-		Self::read_attribute(avatar, attribute) == value.into_bytes()
+		Self::read_attribute(avatar, attribute) == value.into_byte()
 	}
 
 	pub fn has_attribute_with_value_lower_than<T>(
@@ -178,9 +178,16 @@ impl AvatarUtils {
 		lower_than: T,
 	) -> bool
 	where
-		T: IntoBytes,
+		T: IntoByte,
 	{
-		Self::read_attribute(avatar, attribute) < lower_than.into_bytes()
+		Self::read_attribute(avatar, attribute) < lower_than.into_byte()
+	}
+
+	pub fn read_attribute_as<T>(avatar: &Avatar, attribute: AvatarAttributes) -> T
+	where
+		T: FromByte,
+	{
+		T::from_byte(Self::read_attribute(avatar, attribute))
 	}
 
 	pub fn read_attribute(avatar: &Avatar, attribute: AvatarAttributes) -> u8 {

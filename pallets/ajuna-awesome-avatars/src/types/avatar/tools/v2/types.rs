@@ -1,5 +1,9 @@
-pub(crate) trait IntoBytes {
-	fn into_bytes(self) -> u8;
+pub(crate) trait IntoByte {
+	fn into_byte(self) -> u8;
+}
+
+pub(crate) trait FromByte {
+	fn from_byte(byte: u8) -> Self;
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -29,8 +33,8 @@ pub(crate) enum HexType {
 	XF = 0b1111,
 }
 
-impl IntoBytes for HexType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for HexType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -47,8 +51,8 @@ pub(crate) enum NibbleType {
 	X7 = 0b0111,
 }
 
-impl IntoBytes for NibbleType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for NibbleType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -64,9 +68,23 @@ pub(crate) enum ItemType {
 	Special = 6,
 }
 
-impl IntoBytes for ItemType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for ItemType {
+	fn into_byte(self) -> u8 {
 		self as u8
+	}
+}
+
+impl FromByte for ItemType {
+	fn from_byte(byte: u8) -> Self {
+		match byte {
+			1 => Self::Pet,
+			2 => Self::Material,
+			3 => Self::Essence,
+			4 => Self::Equipable,
+			5 => Self::Blueprint,
+			6 => Self::Special,
+			_ => Self::default(),
+		}
 	}
 }
 
@@ -81,8 +99,22 @@ pub(crate) enum RarityType {
 	Mythical = 6,
 }
 
-impl IntoBytes for RarityType {
-	fn into_bytes(self) -> u8 {
+impl FromByte for RarityType {
+	fn from_byte(byte: u8) -> Self {
+		match byte {
+			1 => Self::Common,
+			2 => Self::Uncommon,
+			3 => Self::Rare,
+			4 => Self::Epic,
+			5 => Self::Legendary,
+			6 => Self::Mythical,
+			_ => Self::default(),
+		}
+	}
+}
+
+impl IntoByte for RarityType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -95,8 +127,19 @@ pub(crate) enum PetItemType {
 	Egg = 3,
 }
 
-impl IntoBytes for PetItemType {
-	fn into_bytes(self) -> u8 {
+impl FromByte for PetItemType {
+	fn from_byte(byte: u8) -> Self {
+		match byte {
+			1 => Self::Pet,
+			2 => Self::PetPart,
+			3 => Self::Egg,
+			_ => Self::default(),
+		}
+	}
+}
+
+impl IntoByte for PetItemType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -113,8 +156,23 @@ pub(crate) enum EquipableItemType {
 	WeaponVersion3 = 7,
 }
 
-impl IntoBytes for EquipableItemType {
-	fn into_bytes(self) -> u8 {
+impl FromByte for EquipableItemType {
+	fn from_byte(byte: u8) -> Self {
+		match byte {
+			1 => Self::ArmorBase,
+			2 => Self::ArmorComponent1,
+			3 => Self::ArmorComponent2,
+			4 => Self::ArmorComponent3,
+			5 => Self::WeaponVersion1,
+			6 => Self::WeaponVersion2,
+			7 => Self::WeaponVersion3,
+			_ => Self::default(),
+		}
+	}
+}
+
+impl IntoByte for EquipableItemType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -159,8 +217,8 @@ pub(crate) enum PetType {
 	CrazyDude = 7,
 }
 
-impl IntoBytes for PetType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for PetType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -177,8 +235,8 @@ pub(crate) enum PetPartType {
 	Eyes = 7,
 }
 
-impl IntoBytes for PetPartType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for PetPartType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -196,8 +254,8 @@ pub(crate) enum SlotType {
 	WeaponBack = 9,
 }
 
-impl IntoBytes for SlotType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for SlotType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -215,8 +273,8 @@ pub(crate) enum MaterialItemType {
 	Nanomaterials = 8,
 }
 
-impl IntoBytes for MaterialItemType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for MaterialItemType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -229,8 +287,8 @@ pub(crate) enum EssenceItemType {
 	GlowSpark = 3,
 }
 
-impl IntoBytes for EssenceItemType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for EssenceItemType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -241,8 +299,8 @@ pub(crate) enum BlueprintItemType {
 	Blueprint = 1,
 }
 
-impl IntoBytes for BlueprintItemType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for BlueprintItemType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }
@@ -253,8 +311,8 @@ pub(crate) enum SpecialItemType {
 	Special = 1,
 }
 
-impl IntoBytes for SpecialItemType {
-	fn into_bytes(self) -> u8 {
+impl IntoByte for SpecialItemType {
+	fn into_byte(self) -> u8 {
 		self as u8
 	}
 }

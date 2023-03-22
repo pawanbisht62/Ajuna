@@ -200,169 +200,193 @@ where
 		input_leader: &Avatar,
 		input_sacrifices: &[&Avatar],
 	) -> ForgeType {
-		if AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::ItemType,
-			ItemType::Material,
-		) && input_sacrifices.iter().all(|sacrifice| {
-			AvatarUtils::has_attribute_with_same_value_as(
-				input_leader,
-				sacrifice,
-				AvatarAttributes::ItemSubType,
-			)
-		}) {
-			return ForgeType::Stack
-		}
+		let input_leader_item_type =
+			AvatarUtils::read_attribute_as::<ItemType>(input_leader, AvatarAttributes::ItemType);
 
-		if AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::ItemType,
-			ItemType::Pet,
-		) && AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::ItemSubType,
-			PetItemType::PetPart,
-		) && input_sacrifices.iter().all(|sacrifice| {
-			AvatarUtils::has_attribute_with_value(
-				sacrifice,
-				AvatarAttributes::ItemSubType,
-				PetItemType::PetPart,
-			) && AvatarUtils::has_attribute_with_same_value_as(
-				sacrifice,
-				input_leader,
-				AvatarAttributes::ClassType2,
-			)
-		}) {
-			return ForgeType::Stack
-		}
+		match input_leader_item_type {
+			ItemType::Pet => {
+				let leader_rarity = AvatarUtils::read_attribute_as::<RarityType>(
+					input_leader,
+					AvatarAttributes::RarityType,
+				);
 
-		if AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::ItemType,
-			ItemType::Pet,
-		) && AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::ItemSubType,
-			PetItemType::PetPart,
-		) && input_sacrifices.iter().all(|sacrifice| {
-			AvatarUtils::has_attribute_with_value(
-				sacrifice,
-				AvatarAttributes::ItemType,
-				ItemType::Material,
-			)
-		}) {
-			return ForgeType::Tinker
-		}
-
-		if AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::ItemType,
-			ItemType::Blueprint,
-		) && input_sacrifices.iter().all(|sacrifice| {
-			AvatarUtils::has_attribute_with_value(
-				sacrifice,
-				AvatarAttributes::ItemType,
-				ItemType::Material,
-			)
-		}) {
-			return ForgeType::Build
-		}
-
-		if AvatarUtils::has_attribute_with_value_lower_than(
-			input_leader,
-			AvatarAttributes::RarityType,
-			RarityType::Legendary,
-		) && AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::ItemType,
-			ItemType::Equipable,
-		) && EquipableItemType::is_armor(EquipableItemType::from_bytes(
-			AvatarUtils::read_attribute(input_leader, AvatarAttributes::ItemSubType),
-		)) && input_sacrifices.iter().any(|sacrifice| {
-			AvatarUtils::has_attribute_set_with_same_values_as(
-				sacrifice,
-				input_leader,
-				&[
-					AvatarAttributes::ItemType,
+				let leader_sub_type = AvatarUtils::read_attribute_as::<PetItemType>(
+					input_leader,
 					AvatarAttributes::ItemSubType,
-					AvatarAttributes::ClassType1,
-					AvatarAttributes::ClassType2,
-				],
-			)
-		}) && input_sacrifices.iter().all(|sacrifice| {
-			(AvatarUtils::has_attribute_set_with_same_values_as(
-				sacrifice,
-				input_leader,
-				&[
-					AvatarAttributes::ItemType,
-					AvatarAttributes::ClassType1,
-					AvatarAttributes::ClassType2,
-				],
-			) && EquipableItemType::is_armor(EquipableItemType::from_bytes(
-				AvatarUtils::read_attribute(sacrifice, AvatarAttributes::ItemSubType),
-			))) || AvatarUtils::has_attribute_with_value(
-				sacrifice,
-				AvatarAttributes::ItemType,
-				ItemType::Essence,
-			)
-		}) {
-			return ForgeType::Assemble
+				);
+
+				match leader_rarity {
+					RarityType::Legendary => match leader_sub_type {
+						PetItemType::Pet => {
+							if input_sacrifices.iter().all(|sacrifice| {
+								let equipable_item =
+									EquipableItemType::from_bytes(AvatarUtils::read_attribute(
+										sacrifice,
+										AvatarAttributes::ItemSubType,
+									));
+
+								AvatarUtils::has_attribute_with_value(
+									sacrifice,
+									AvatarAttributes::RarityType,
+									RarityType::Legendary,
+								) && AvatarUtils::has_attribute_with_same_value_as(
+									sacrifice,
+									input_leader,
+									AvatarAttributes::ClassType2,
+								) && AvatarUtils::has_attribute_with_value(
+									input_leader,
+									AvatarAttributes::ItemType,
+									ItemType::Equipable,
+								) && (equipable_item == EquipableItemType::ArmorBase ||
+									EquipableItemType::is_weapon(equipable_item))
+							}) {
+								ForgeType::Equip
+							} else {
+								ForgeType::None
+							}
+						},
+						PetItemType::PetPart => ForgeType::None,
+						PetItemType::Egg => ForgeType::None,
+					},
+					RarityType::Mythical => ForgeType::None,
+					_ => match leader_sub_type {
+						PetItemType::Pet => ForgeType::None,
+						PetItemType::PetPart => {
+							if input_sacrifices.iter().all(|sacrifice| {
+								AvatarUtils::has_attribute_with_value(
+									sacrifice,
+									AvatarAttributes::ItemSubType,
+									PetItemType::PetPart,
+								) && AvatarUtils::has_attribute_with_same_value_as(
+									sacrifice,
+									input_leader,
+									AvatarAttributes::ClassType2,
+								)
+							}) {
+								ForgeType::Stack
+							} else if input_sacrifices.iter().all(|sacrifice| {
+								AvatarUtils::has_attribute_with_value(
+									sacrifice,
+									AvatarAttributes::ItemType,
+									ItemType::Material,
+								)
+							}) {
+								ForgeType::Tinker
+							} else {
+								ForgeType::None
+							}
+						},
+						PetItemType::Egg => {
+							if input_sacrifices.iter().all(|sacrifice| {
+								AvatarUtils::has_attribute_with_value(
+									sacrifice,
+									AvatarAttributes::ItemType,
+									ItemType::Pet,
+								) && AvatarUtils::has_attribute_with_value(
+									sacrifice,
+									AvatarAttributes::ItemSubType,
+									PetItemType::Egg,
+								)
+							}) {
+								ForgeType::Breed
+							} else {
+								ForgeType::None
+							}
+						},
+					},
+				}
+			},
+			ItemType::Material => {
+				if input_sacrifices.iter().all(|sacrifice| {
+					AvatarUtils::has_attribute_with_same_value_as(
+						input_leader,
+						sacrifice,
+						AvatarAttributes::ItemSubType,
+					)
+				}) {
+					ForgeType::Stack
+				} else {
+					ForgeType::None
+				}
+			},
+			ItemType::Essence => ForgeType::None,
+			ItemType::Equipable => {
+				let leader_rarity = AvatarUtils::read_attribute_as::<RarityType>(
+					input_leader,
+					AvatarAttributes::RarityType,
+				);
+
+				match leader_rarity {
+					RarityType::Legendary | RarityType::Mythical => ForgeType::None,
+					_ => {
+						let equipable_item = AvatarUtils::read_attribute_as::<EquipableItemType>(
+							input_leader,
+							AvatarAttributes::ItemSubType,
+						);
+
+						let any_sacrifice_full_match_leader =
+							input_sacrifices.iter().any(|sacrifice| {
+								AvatarUtils::has_attribute_set_with_same_values_as(
+									input_leader,
+									sacrifice,
+									&[
+										AvatarAttributes::ItemType,
+										AvatarAttributes::ItemSubType,
+										AvatarAttributes::ClassType1,
+										AvatarAttributes::ClassType2,
+									],
+								)
+							});
+
+						let all_sacrifice_are_armor_part_or_essence =
+							input_sacrifices.iter().all(|sacrifice| {
+								let equipable_sacrifice_item =
+									AvatarUtils::read_attribute_as::<EquipableItemType>(
+										input_leader,
+										AvatarAttributes::ItemSubType,
+									);
+
+								(AvatarUtils::has_attribute_set_with_same_values_as(
+									sacrifice,
+									input_leader,
+									&[
+										AvatarAttributes::ItemType,
+										AvatarAttributes::ClassType1,
+										AvatarAttributes::ClassType2,
+									],
+								) && EquipableItemType::is_armor(equipable_sacrifice_item)) ||
+									AvatarUtils::has_attribute_with_value(
+										sacrifice,
+										AvatarAttributes::ItemType,
+										ItemType::Essence,
+									)
+							});
+
+						if EquipableItemType::is_armor(equipable_item) &&
+							any_sacrifice_full_match_leader &&
+							all_sacrifice_are_armor_part_or_essence
+						{
+							ForgeType::Assemble
+						} else {
+							ForgeType::None
+						}
+					},
+				}
+			},
+			ItemType::Blueprint => {
+				if input_sacrifices.iter().all(|sacrifice| {
+					AvatarUtils::has_attribute_with_value(
+						sacrifice,
+						AvatarAttributes::ItemType,
+						ItemType::Material,
+					)
+				}) {
+					ForgeType::Build
+				} else {
+					ForgeType::None
+				}
+			},
+			ItemType::Special => ForgeType::None,
 		}
-
-		if AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::ItemType,
-			ItemType::Pet,
-		) && AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::ItemSubType,
-			PetItemType::Pet,
-		) && AvatarUtils::has_attribute_with_value(
-			input_leader,
-			AvatarAttributes::RarityType,
-			RarityType::Legendary,
-		) && input_sacrifices.iter().all(|sacrifice| {
-			let equipable_item = EquipableItemType::from_bytes(AvatarUtils::read_attribute(
-				sacrifice,
-				AvatarAttributes::ItemSubType,
-			));
-
-			AvatarUtils::has_attribute_with_value(
-				sacrifice,
-				AvatarAttributes::RarityType,
-				RarityType::Legendary,
-			) && AvatarUtils::has_attribute_with_same_value_as(
-				sacrifice,
-				input_leader,
-				AvatarAttributes::ClassType2,
-			) && AvatarUtils::has_attribute_with_value(
-				input_leader,
-				AvatarAttributes::ItemType,
-				ItemType::Equipable,
-			) && (equipable_item == EquipableItemType::ArmorBase ||
-				EquipableItemType::is_weapon(equipable_item))
-		}) {
-			return ForgeType::Equip
-		}
-
-		if AvatarUtils::has_attribute_with_value_lower_than(
-			input_leader,
-			AvatarAttributes::RarityType,
-			RarityType::Legendary,
-		) && input_sacrifices.iter().all(|sacrifice| {
-			AvatarUtils::has_attribute_with_value(
-				sacrifice,
-				AvatarAttributes::ItemType,
-				ItemType::Pet,
-			) && AvatarUtils::has_attribute_with_value(
-				sacrifice,
-				AvatarAttributes::ItemSubType,
-				PetItemType::Egg,
-			)
-		}) {
-			return ForgeType::Breed
-		}
-
-		ForgeType::None
 	}
 }
