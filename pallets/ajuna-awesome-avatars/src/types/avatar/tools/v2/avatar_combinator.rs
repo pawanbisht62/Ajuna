@@ -40,13 +40,14 @@ where
 	fn match_avatars(
 		input_leader: ForgeItem<T>,
 		sacrifices: Vec<ForgeItem<T>>,
-	) -> (ForgeItem<T>, Vec<ForgeItem<T>>) {
+	) -> (ForgeItem<T>, Vec<ForgeItem<T>>, Vec<AvatarIdOf<T>>) {
 		let (leader_id, mut leader) = input_leader;
 		let mut matches: u8 = 0;
 		let mut no_fit: u8 = 0;
 
 		let mut matching_score = Vec::new();
 		let mut matching_sacrifices = Vec::new();
+		let mut non_matching_sacrifices = Vec::new();
 
 		let mut leader_progress_array = AvatarUtils::read_progress_array(&leader);
 
@@ -63,6 +64,7 @@ where
 				) {
 					matching_score.extend(matched_indexes);
 					matches += 1;
+					non_matching_sacrifices.push(*sacrifice_id);
 				} else {
 					matching_sacrifices.push(*sacrifice_id);
 				}
@@ -110,6 +112,7 @@ where
 					matching_sacrifices.iter().any(|match_id| match_id == sacrifice_id)
 				})
 				.collect(),
+			non_matching_sacrifices,
 		)
 	}
 
@@ -217,14 +220,31 @@ where
 		season: &SeasonOf<T>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		let (leader_id, mut leader) = input_leader;
-		let leader_spec_bytes = AvatarUtils::read_full_spec_bytes(&leader);
 
+		let mut new_souls = SoulCount::MIN;
+
+		let mut leader_spec_bytes = AvatarUtils::read_full_spec_bytes(&leader);
 		let equipped_slots = leader_spec_bytes.map(|byte| byte & ByteType::Low as u8);
 
 		for (_, sacrifice) in input_sacrifices.iter() {
-			let slot_type = AvatarUtils::read_attribute(sacrifice, AvatarAttributes::ClassType1);
-			// TODO:
+			new_souls += sacrifice.souls;
+
+			let slot_type =
+				AvatarUtils::read_attribute(sacrifice, AvatarAttributes::ClassType1) as usize;
+			let filled_slots =
+				equipped_slots.clone().into_iter().filter(|slot| *slot > 0).count() as u8;
+			let slot_empty = equipped_slots[slot_type] == 0;
+			if filled_slots >= MAX_EQUIPPED_SLOTS && slot_empty {
+				continue
+			}
+
+			leader_spec_bytes[slot_type] =
+				AvatarUtils::read_spec_byte(sacrifice, AvatarSpecBytes::SpecByte1);
 		}
+
+		AvatarUtils::write_full_spec_bytes(&mut leader, leader_spec_bytes);
+
+		leader.souls += new_souls;
 
 		let output_vec: Vec<ForgeOutput<T>> = input_sacrifices
 			.into_iter()

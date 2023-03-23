@@ -3,12 +3,12 @@ use super::*;
 /*
 	   public const bool Obfuscate = false;
 	   public const byte ProgressComponents = 11;
-	   public const int MaxEquipedSlots = 5;
 */
 
 pub(crate) const MAX_QUANTITY: u8 = 8;
 pub(crate) const MIN_SACRIFICE: u8 = 1;
 pub(crate) const MAX_SACRIFICE: u8 = 4;
+pub(crate) const MAX_EQUIPPED_SLOTS: u8 = 5;
 pub(crate) const PROGRESS_VARIATIONS: u8 = 6;
 pub(crate) const STACK_PROBABILITY: f32 = 0.05;
 pub(crate) const PROGRESS_PROBABILITY: f32 = 0.15;
