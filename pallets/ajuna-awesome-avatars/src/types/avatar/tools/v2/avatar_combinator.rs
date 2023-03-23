@@ -28,13 +28,89 @@ where
 			ForgeType::Breed =>
 				Self::breed_avatars(player, input_leader, input_sacrifices, season_id, season),
 			ForgeType::Equip =>
-				Self::equipment_avatars(player, input_leader, input_sacrifices, season_id, season),
+				Self::equip_avatars(player, input_leader, input_sacrifices, season_id, season),
 			ForgeType::Mate =>
 				Self::mate_avatars(player, input_leader, input_sacrifices, season_id, season),
 			ForgeType::Special =>
 				Self::special_avatars(player, input_leader, input_sacrifices, season_id, season),
 			ForgeType::None => Err(Error::<T>::InvalidForgeComponents.into()),
 		}
+	}
+
+	fn match_avatars(
+		input_leader: ForgeItem<T>,
+		sacrifices: Vec<ForgeItem<T>>,
+	) -> (ForgeItem<T>, Vec<ForgeItem<T>>) {
+		let (leader_id, mut leader) = input_leader;
+		let mut matches: u8 = 0;
+		let mut no_fit: u8 = 0;
+
+		let mut matching_score = Vec::new();
+		let mut matching_sacrifices = Vec::new();
+
+		let mut leader_progress_array = AvatarUtils::read_progress_array(&leader);
+
+		sacrifices.iter().for_each(|(sacrifice_id, sacrifice)| {
+			let sacrifice_progress_array = AvatarUtils::read_progress_array(&sacrifice);
+
+			if let Some(matched_indexes) =
+				AvatarUtils::match_progress_arrays(leader_progress_array, sacrifice_progress_array)
+			{
+				if AvatarUtils::has_attribute_set_with_same_values_as(
+					&leader,
+					&sacrifice,
+					&[AvatarAttributes::ItemType, AvatarAttributes::ItemSubType],
+				) {
+					matching_score.extend(matched_indexes);
+					matches += 1;
+				} else {
+					matching_sacrifices.push(*sacrifice_id);
+				}
+			} else {
+				no_fit += 1;
+			}
+		});
+
+		if !matching_score.is_empty() {
+			let rolls = matches + no_fit;
+
+			let match_probability = (1_f32 - BASE_PROGRESS_PROBABILITY) / MAX_SACRIFICE as f32;
+			let probability_match = (((BASE_PROGRESS_PROBABILITY + matches as f32) *
+				match_probability) *
+				255_f32) as u8;
+
+			let sacrifice_count = sacrifices.len();
+
+			for i in 0..rolls as usize {
+				let random_hash = sacrifices[i % sacrifice_count].1.dna.as_slice();
+
+				if random_hash[(random_hash[i] % 32) as usize] < probability_match {
+					let pos = matching_score[random_hash[i] as usize % matching_score.len()];
+
+					leader_progress_array[pos as usize] += 0x10; // 16
+
+					matching_score.retain(|item| *item != pos);
+
+					if matching_score.is_empty() {
+						break
+					}
+				}
+			}
+
+			AvatarUtils::write_progress_array(&mut leader, leader_progress_array);
+		}
+
+		leader.souls += sacrifices.iter().map(|(_, sacrifice)| sacrifice.souls).sum::<SoulCount>();
+
+		(
+			(leader_id, leader),
+			sacrifices
+				.into_iter()
+				.filter(|(sacrifice_id, _)| {
+					matching_sacrifices.iter().any(|match_id| match_id == sacrifice_id)
+				})
+				.collect(),
+		)
 	}
 
 	fn stack_avatars(
@@ -62,8 +138,10 @@ where
 
 		let mut essence_avatar: Option<Avatar> = None;
 
+		let stack_probability = (STACK_PROBABILITY * 256_f32).abs() as u8;
+
 		for i in 0..input_sacrifices.len() {
-			if STACK_PROBABILITY > avatar.dna[i] {
+			if stack_probability > avatar.dna[i] {
 				essence_avatar = match essence_avatar {
 					None => {
 						let dna =
@@ -131,14 +209,29 @@ where
 		todo!()
 	}
 
-	fn equipment_avatars(
+	fn equip_avatars(
 		player: &T::AccountId,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
 		season_id: SeasonId,
 		season: &SeasonOf<T>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
-		todo!()
+		let (leader_id, mut leader) = input_leader;
+		let leader_spec_bytes = AvatarUtils::read_full_spec_bytes(&leader);
+
+		let equipped_slots = leader_spec_bytes.map(|byte| byte & ByteType::Low as u8);
+
+		for (_, sacrifice) in input_sacrifices.iter() {
+			let slot_type = AvatarUtils::read_attribute(sacrifice, AvatarAttributes::ClassType1);
+			// TODO:
+		}
+
+		let output_vec: Vec<ForgeOutput<T>> = input_sacrifices
+			.into_iter()
+			.map(|(sacrifice_id, _)| ForgeOutput::Consumed(sacrifice_id))
+			.collect();
+
+		Ok((LeaderForgeOutput::Forged((leader_id, leader), 0), output_vec))
 	}
 
 	fn mate_avatars(

@@ -1,5 +1,8 @@
-use super::{types::*, ByteType};
-use crate::types::{Avatar, AvatarVersion, Dna, SeasonId, SoulCount};
+use super::{constants::PROGRESS_VARIATIONS, types::*, ByteType};
+use crate::types::{
+	avatar::tools::v2::constants::{BASE_PROGRESS_PROBABILITY, MAX_SACRIFICE},
+	Avatar, AvatarVersion, Dna, SeasonId, SoulCount,
+};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AvatarAttributes {
@@ -149,10 +152,15 @@ impl AvatarUtils {
 	}
 
 	fn read_dna_strand(avatar: &Avatar, position: usize, byte_type: ByteType) -> u8 {
+		Self::read_dna_at(avatar.dna.as_slice(), position, byte_type)
+	}
+
+	#[inline]
+	fn read_dna_at(dna: &[u8], position: usize, byte_type: ByteType) -> u8 {
 		match byte_type {
-			ByteType::Full => avatar.dna[position],
-			ByteType::High => avatar.dna[position] >> 4,
-			ByteType::Low => avatar.dna[position] & ByteType::High as u8,
+			ByteType::Full => dna[position],
+			ByteType::High => dna[position] >> 4,
+			ByteType::Low => dna[position] & ByteType::High as u8,
 		}
 	}
 
@@ -165,6 +173,18 @@ impl AvatarUtils {
 			ByteType::Low =>
 				avatar.dna[position] = (avatar.dna[position] & (ByteType::Low as u8)) |
 					(value & (ByteType::High as u8)),
+		}
+	}
+
+	#[inline]
+	fn write_dna_at(dna: &mut [u8], position: usize, byte_type: ByteType, value: u8) {
+		match byte_type {
+			ByteType::Full => dna[position] = value,
+			ByteType::High =>
+				dna[position] = (dna[position] & (ByteType::High as u8)) | (value << 4),
+			ByteType::Low =>
+				dna[position] =
+					(dna[position] & (ByteType::Low as u8)) | (value & (ByteType::High as u8)),
 		}
 	}
 
@@ -291,6 +311,47 @@ impl AvatarUtils {
 		let mut out = [0; 11];
 		out.copy_from_slice(&avatar.dna[21..32]);
 		out
+	}
+
+	pub fn match_progress_arrays(array_1: [u8; 11], array_2: [u8; 11]) -> Option<Vec<u8>> {
+		let mut matches = Vec::new();
+
+		let mut mirror = usize::MIN;
+
+		let lowest_1 = Self::read_dna_at(&array_1, 0, ByteType::High);
+
+		for index in array_1 {
+			let rarity_1 = Self::read_dna_at(&array_1, 1, ByteType::High);
+			let variation_1 = Self::read_dna_at(&array_1, 1, ByteType::Low);
+
+			let rarity_2 = Self::read_dna_at(&array_2, 1, ByteType::High);
+			let variation_2 = Self::read_dna_at(&array_2, 1, ByteType::Low);
+
+			let have_same_rarity = rarity_1 == rarity_2;
+			let is_maxed = rarity_1 > lowest_1 || lowest_1 == RarityType::Legendary.into_byte();
+
+			if have_same_rarity && !is_maxed && Self::match_progress_byte(variation_1, variation_2)
+			{
+				matches.push(index);
+			}
+
+			if is_maxed && (variation_1 == variation_2) {
+				mirror = mirror.saturating_add(1);
+			}
+		}
+
+		let total_matches = matches.len();
+		let handicap = match total_matches {
+			1 => 4,
+			2 => 2,
+			_ => 0,
+		};
+		(total_matches > 0 && (total_matches + mirror) >= handicap + 3).then_some(matches)
+	}
+
+	pub fn match_progress_byte(byte_1: u8, byte_2: u8) -> bool {
+		let diff = byte_1.saturating_sub(byte_2);
+		diff == 1 || diff == (PROGRESS_VARIATIONS - 1)
 	}
 
 	pub fn write_progress_array(avatar: &mut Avatar, value: [u8; 11]) {

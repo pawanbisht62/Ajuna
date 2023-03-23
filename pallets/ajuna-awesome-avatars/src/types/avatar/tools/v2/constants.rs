@@ -1,9 +1,18 @@
 use super::*;
 
-pub(crate) const MAX_QUANTITY: u8 = 8;
+/*
+	   public const bool Obfuscate = false;
+	   public const byte ProgressComponents = 11;
+	   public const int MaxEquipedSlots = 5;
+*/
 
-// This value comes from the following calculation -> 256 * 0.05 -> 12.8 -> 13
-pub(crate) const STACK_PROBABILITY: u8 = 13;
+pub(crate) const MAX_QUANTITY: u8 = 8;
+pub(crate) const MIN_SACRIFICE: u8 = 1;
+pub(crate) const MAX_SACRIFICE: u8 = 4;
+pub(crate) const PROGRESS_VARIATIONS: u8 = 6;
+pub(crate) const STACK_PROBABILITY: f32 = 0.05;
+pub(crate) const PROGRESS_PROBABILITY: f32 = 0.15;
+pub(crate) const BASE_PROGRESS_PROBABILITY: f32 = 0.20;
 
 /// Probabilities for all PackType::Material options
 pub(crate) const PACK_TYPE_MATERIAL_ITEM_PROBABILITIES: ProbabilitySlots<ItemType, 6> = [
