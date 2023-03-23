@@ -179,6 +179,20 @@ where
 		season_id: SeasonId,
 		season: &SeasonOf<T>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
+		let mut result = Vec::new();
+
+		let sacrifice_pattern = input_sacrifices
+			.iter()
+			.map(|(_, sacrifice)| {
+				AvatarUtils::read_attribute_as::<MaterialItemType>(
+					sacrifice,
+					AvatarAttributes::ItemSubType,
+				)
+			})
+			.collect::<Vec<MaterialItemType>>();
+
+		// TODO: https://github.com/ajuna-network/Ajuna.AAA.Season2/blob/master/Ajuna.AAA.Season2/Game.cs#L380
+
 		todo!()
 	}
 

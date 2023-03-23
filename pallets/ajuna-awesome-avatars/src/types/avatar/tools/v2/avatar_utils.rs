@@ -357,4 +357,15 @@ impl AvatarUtils {
 	pub fn write_progress_array(avatar: &mut Avatar, value: [u8; 11]) {
 		(&mut avatar.dna[21..11]).copy_from_slice(&value);
 	}
+
+	pub fn bits_to_enums<T>(bits: u8) -> Vec<T>
+	where
+		T: FromByte,
+	{
+		(0..u8::BITS as u8)
+			.into_iter()
+			.filter(|n| (bits & (1 << n)) != 0)
+			.map(|n| T::from_byte(n))
+			.collect()
+	}
 }
