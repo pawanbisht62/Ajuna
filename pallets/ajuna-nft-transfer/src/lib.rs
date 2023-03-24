@@ -42,13 +42,9 @@ pub mod pallet {
 			},
 			Locker,
 		},
-		PalletId,
 	};
 	use frame_system::{ensure_root, ensure_signed, pallet_prelude::OriginFor};
-	use sp_runtime::{
-		traits::{AccountIdConversion, AtLeast32BitUnsigned},
-		Saturating,
-	};
+	use sp_runtime::{traits::AtLeast32BitUnsigned, Saturating};
 
 	pub type EncodedAssetOf<T> = BoundedVec<u8, <T as Config>::MaxAssetEncodedSize>;
 
@@ -117,11 +113,6 @@ pub mod pallet {
 			+ Mutate<Self::AccountId, Self::ItemConfig>
 			+ Destroy<Self::AccountId>;
 
-		/// The holding's pallet id, used for deriving its sovereign account identifier for the Nft
-		/// holding account.
-		#[pallet::constant]
-		type HoldingPalletId: Get<PalletId>;
-
 		type WeightInfo: WeightInfo;
 	}
 
@@ -140,10 +131,6 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type LockItemStatus<T: Config> =
 		StorageDoubleMap<_, Identity, T::CollectionId, Identity, T::ItemId, NftStatus, OptionQuery>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn holding_account)]
-	pub type HoldingAccount<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn nft_claimants)]
@@ -223,19 +210,6 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		/// The account identifier of the holding account.
-		pub fn holding_account_id() -> T::AccountId {
-			if let Some(account) = Self::holding_account() {
-				account
-			} else {
-				let account: T::AccountId = T::HoldingPalletId::get().into_account_truncating();
-
-				HoldingAccount::<T>::put(account.clone());
-
-				account
-			}
-		}
-
 		fn ensure_organizer(origin: OriginFor<T>) -> DispatchResult {
 			let maybe_organizer = ensure_signed(origin)?;
 			let existing_organizer = Self::organizer().ok_or(Error::<T>::OrganizerNotSet)?;
@@ -280,7 +254,7 @@ pub mod pallet {
 			T::NftHelper::mint_into(
 				&collection_id,
 				&next_item_id,
-				&Self::holding_account_id(),
+				&owner,
 				&Self::AssetConfig::default(),
 				true,
 			)?;
@@ -346,7 +320,7 @@ pub mod pallet {
 				T::NftHelper::clear_typed_attribute(&collection_id, &asset_id, &attribute_key)?;
 			}
 
-			T::NftHelper::burn(&collection_id, &asset_id, Some(&Self::holding_account_id()))?;
+			T::NftHelper::burn(&collection_id, &asset_id, Some(&owner))?;
 			LockItemStatus::<T>::remove(collection_id, asset_id);
 
 			Self::deposit_event(Event::<T>::AssetRestored { collection_id, asset_id, owner });
