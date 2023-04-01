@@ -175,11 +175,11 @@ where
 	fn tinker_avatars(
 		player: &T::AccountId,
 		input_leader: ForgeItem<T>,
-		input_sacrifices: Vec<ForgeItem<T>>,
+		mut input_sacrifices: Vec<ForgeItem<T>>,
 		season_id: SeasonId,
 		season: &SeasonOf<T>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
-		let mut result = Vec::new();
+		let mut output_sacrifices = Vec::with_capacity(0);
 
 		let sacrifice_pattern = input_sacrifices
 			.iter()
@@ -191,9 +191,93 @@ where
 			})
 			.collect::<Vec<MaterialItemType>>();
 
-		// TODO: https://github.com/ajuna-network/Ajuna.AAA.Season2/blob/master/Ajuna.AAA.Season2/Game.cs#L380
+		let spec_bytes = AvatarUtils::read_full_spec_bytes(&input_leader.1);
 
-		todo!()
+		let unord_1 = AvatarUtils::bits_to_enums::<MaterialItemType>(spec_bytes[0]);
+		let ord_1 = AvatarUtils::bits_order_to_enum(spec_bytes[1], unord_1);
+		let pat_1_flag = sacrifice_pattern == ord_1;
+
+		let unord_2 = AvatarUtils::bits_to_enums::<MaterialItemType>(spec_bytes[2]);
+		let ord_2 = AvatarUtils::bits_order_to_enum(spec_bytes[3], unord_2);
+		let pat_2_flag = sacrifice_pattern == ord_2;
+
+		let unord_3 = AvatarUtils::bits_to_enums::<MaterialItemType>(spec_bytes[4]);
+		let ord_3 = AvatarUtils::bits_order_to_enum(spec_bytes[5], unord_3);
+		let pat_3_flag = sacrifice_pattern == ord_3;
+
+		let unord_4 = AvatarUtils::bits_to_enums::<MaterialItemType>(spec_bytes[6]);
+		let ord_4 = AvatarUtils::bits_order_to_enum(spec_bytes[7], unord_4);
+		let pat_4_flag = sacrifice_pattern == ord_4;
+
+		let mut soul_points = 0;
+
+		let correct_pattern = (pat_1_flag || pat_2_flag || pat_3_flag || pat_4_flag) &&
+			input_sacrifices
+				.iter()
+				.all(|(_, sacrifice)| AvatarUtils::can_use_avatar(sacrifice, 1));
+
+		if correct_pattern {
+			let mut success = true;
+
+			for (sacrifice_id, mut sacrifice) in input_sacrifices.into_iter() {
+				let (use_result, out_soul_points) = AvatarUtils::use_avatar(&mut sacrifice, 1);
+				success &= use_result;
+				soul_points += out_soul_points;
+
+				let sacrifice_output =
+					if AvatarUtils::read_attribute(&sacrifice, AvatarAttributes::Quantity) == 0 {
+						ForgeOutput::Consumed(sacrifice_id)
+					} else {
+						ForgeOutput::Forged((sacrifice_id, sacrifice), 0)
+					};
+
+				output_sacrifices.push(sacrifice_output);
+			}
+
+			if !success || soul_points > u8::MAX as SoulCount {
+				todo!()
+			}
+
+			let equipable_item_type = {
+				if pat_1_flag {
+					EquipableItemType::ArmorBase
+				} else if pat_2_flag {
+					EquipableItemType::ArmorComponent1
+				} else if pat_3_flag {
+					EquipableItemType::ArmorComponent2
+				} else if pat_4_flag {
+					EquipableItemType::ArmorComponent3
+				} else {
+					todo!()
+				}
+			};
+
+			let pet_type = AvatarUtils::read_attribute_as::<PetType>(
+				&input_leader.1,
+				AvatarAttributes::ClassType2,
+			);
+
+			let slot_type = AvatarUtils::read_attribute_as::<SlotType>(
+				&input_leader.1,
+				AvatarAttributes::ClassType1,
+			);
+
+			let dna = AvatarMinterV2::<T>(PhantomData).generate_base_avatar_dna(player)?;
+			let generated_blueprint = AvatarBuilder::with_dna(season_id, dna)
+				.into_blueprint(
+					BlueprintItemType::Blueprint,
+					pet_type,
+					slot_type,
+					equipable_item_type,
+					sacrifice_pattern,
+					soul_points as SoulCount,
+				)
+				.build();
+
+			output_sacrifices.push(ForgeOutput::Minted(generated_blueprint));
+		}
+
+		Ok((LeaderForgeOutput::Forged(input_leader, 0), output_sacrifices))
 	}
 
 	fn build_avatars(

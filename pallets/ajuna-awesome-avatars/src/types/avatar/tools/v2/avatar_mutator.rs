@@ -183,42 +183,23 @@ where
 			MutatorUtils::splice_dna_strands(base_avatar.dna[26], base_avatar.dna[27]);
 		let quantity = ((spliced_dna % 25) + 1) as u8;
 
+		let pet_type = SlotRoller::<T>::roll_on(&PET_TYPE_PROBABILITIES);
+		let slot_type = SlotRoller::<T>::roll_on(&ARMOR_SLOT_PROBABILITIES);
+
+		// TODO
+		let pattern = vec![];
+		// TODO
+		let equipable_item_type = EquipableItemType::ArmorBase;
+
 		AvatarBuilder::with_base_avatar(base_avatar)
-			.into_blueprint(*self)
-			.with_attribute(
-				AvatarAttributes::ClassType1,
-				SlotRoller::<T>::roll_on(&ARMOR_SLOT_PROBABILITIES),
+			.into_blueprint(
+				*self,
+				pet_type,
+				slot_type,
+				equipable_item_type,
+				pattern,
+				quantity as SoulCount,
 			)
-			.with_attribute(
-				AvatarAttributes::ClassType2,
-				SlotRoller::<T>::roll_on(&PET_TYPE_PROBABILITIES),
-			)
-			.with_attribute(AvatarAttributes::CustomType1, HexType::X1)
-			.with_attribute_raw(AvatarAttributes::Quantity, quantity)
-			// TODO SpecByte
-			.with_spec_byte(AvatarSpecBytes::SpecByte1, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte2, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte3, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte4, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte5, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte6, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte7, 1)
-			/*
-			Parameters: pattern, equippableItemType
-			// This is a default for now
-			var matReq1 = 1;
-			var matReq2 = 1;
-			var matReq3 = 1;
-			var matReq4 = 1;
-			SpecByte1 = AvatarTools.EnumsToBits(pattern),
-			SpecByte2 = AvatarTools.EnumsOrderToBits(pattern),
-			SpecByte3 = (byte)equippableItemType,
-			SpecByte4 = (byte)matReq1,
-			SpecByte5 = (byte)matReq2,
-			SpecByte6 = (byte)matReq3,
-			SpecByte7 = (byte)matReq4,
-			*/
-			.with_soul_count(quantity as SoulCount)
 			.build()
 	}
 }

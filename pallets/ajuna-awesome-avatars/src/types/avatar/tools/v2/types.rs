@@ -178,19 +178,6 @@ impl IntoByte for EquipableItemType {
 }
 
 impl EquipableItemType {
-	pub fn from_bytes(value: u8) -> Self {
-		match value {
-			1 => EquipableItemType::ArmorBase,
-			2 => EquipableItemType::ArmorComponent1,
-			3 => EquipableItemType::ArmorComponent2,
-			4 => EquipableItemType::ArmorComponent3,
-			5 => EquipableItemType::WeaponVersion1,
-			6 => EquipableItemType::WeaponVersion2,
-			7 => EquipableItemType::WeaponVersion3,
-			_ => Self::default(),
-		}
-	}
-
 	pub fn is_armor(item: EquipableItemType) -> bool {
 		item == EquipableItemType::ArmorBase ||
 			item == EquipableItemType::ArmorComponent1 ||
@@ -215,6 +202,21 @@ pub(crate) enum PetType {
 	BigHybrid = 5,
 	GiantWoodStick = 6,
 	CrazyDude = 7,
+}
+
+impl FromByte for PetType {
+	fn from_byte(byte: u8) -> Self {
+		match byte {
+			1 => Self::TankyBulldog,
+			2 => Self::FoxishDude,
+			3 => Self::WierdFerry,
+			4 => Self::FireDino,
+			5 => Self::BigHybrid,
+			6 => Self::GiantWoodStick,
+			7 => Self::CrazyDude,
+			_ => Self::default(),
+		}
+	}
 }
 
 impl IntoByte for PetType {
@@ -254,6 +256,22 @@ pub(crate) enum SlotType {
 	WeaponBack = 9,
 }
 
+impl FromByte for SlotType {
+	fn from_byte(byte: u8) -> Self {
+		match byte {
+			1 => Self::Head,
+			2 => Self::Breast,
+			3 => Self::ArmFront,
+			4 => Self::ArmBack,
+			5 => Self::LegFront,
+			6 => Self::LegBack,
+			8 => Self::WeaponFront,
+			9 => Self::WeaponBack,
+			_ => Self::default(),
+		}
+	}
+}
+
 impl IntoByte for SlotType {
 	fn into_byte(self) -> u8 {
 		self as u8
@@ -271,6 +289,22 @@ pub(crate) enum MaterialItemType {
 	Ceramics = 6,
 	Superconductors = 7,
 	Nanomaterials = 8,
+}
+
+impl FromByte for MaterialItemType {
+	fn from_byte(byte: u8) -> Self {
+		match byte {
+			1 => Self::Polymers,
+			2 => Self::Electronics,
+			3 => Self::PowerCells,
+			4 => Self::Optics,
+			5 => Self::Metals,
+			6 => Self::Ceramics,
+			7 => Self::Superconductors,
+			8 => Self::Nanomaterials,
+			_ => Self::default(),
+		}
+	}
 }
 
 impl IntoByte for MaterialItemType {

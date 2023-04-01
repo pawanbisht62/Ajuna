@@ -223,7 +223,7 @@ where
 						PetItemType::Pet => {
 							if input_sacrifices.iter().all(|sacrifice| {
 								let equipable_item =
-									EquipableItemType::from_bytes(AvatarUtils::read_attribute(
+									EquipableItemType::from_byte(AvatarUtils::read_attribute(
 										sacrifice,
 										AvatarAttributes::ItemSubType,
 									));

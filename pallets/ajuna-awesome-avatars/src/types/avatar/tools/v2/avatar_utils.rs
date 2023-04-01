@@ -3,6 +3,7 @@ use crate::types::{
 	avatar::tools::v2::constants::{BASE_PROGRESS_PROBABILITY, MAX_SACRIFICE},
 	Avatar, AvatarVersion, Dna, SeasonId, SoulCount,
 };
+use sp_runtime::SaturatedConversion;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AvatarAttributes {
@@ -113,9 +114,33 @@ impl AvatarBuilder {
 			.with_attribute(AvatarAttributes::ItemSubType, equipable_type)
 	}
 
-	pub fn into_blueprint(mut self, blueprint_type: BlueprintItemType) -> Self {
+	pub fn into_blueprint(
+		mut self,
+		blueprint_type: BlueprintItemType,
+		pet_type: PetType,
+		slot_type: SlotType,
+		equipable_item_type: EquipableItemType,
+		pattern: Vec<MaterialItemType>,
+		soul_points: SoulCount,
+	) -> Self {
 		self.with_attribute(AvatarAttributes::ItemType, ItemType::Blueprint)
 			.with_attribute(AvatarAttributes::ItemSubType, blueprint_type)
+			.with_attribute(AvatarAttributes::ClassType1, slot_type)
+			.with_attribute(AvatarAttributes::ClassType2, pet_type)
+			.with_attribute(AvatarAttributes::CustomType1, HexType::X1)
+			.with_attribute(AvatarAttributes::RarityType, RarityType::Rare)
+			.with_attribute_raw(AvatarAttributes::Quantity, soul_points as u8)
+			// Unused
+			.with_attribute(AvatarAttributes::CustomType2, HexType::X0)
+			.with_spec_byte(AvatarSpecBytes::SpecByte1, AvatarUtils::enums_to_bits(&pattern))
+			.with_spec_byte(AvatarSpecBytes::SpecByte2, AvatarUtils::enums_order_to_bits(&pattern))
+			.with_spec_byte(AvatarSpecBytes::SpecByte3, equipable_item_type.into_byte())
+			// TODO SpecByte
+			.with_spec_byte(AvatarSpecBytes::SpecByte4, 1)
+			.with_spec_byte(AvatarSpecBytes::SpecByte5, 1)
+			.with_spec_byte(AvatarSpecBytes::SpecByte6, 1)
+			.with_spec_byte(AvatarSpecBytes::SpecByte7, 1)
+			.with_soul_count(soul_points)
 	}
 
 	pub fn into_special(mut self, special_type: SpecialItemType) -> Self {
@@ -358,6 +383,65 @@ impl AvatarUtils {
 		(&mut avatar.dna[21..11]).copy_from_slice(&value);
 	}
 
+	pub fn can_use_avatar(avatar: &Avatar, quantity: u8) -> bool {
+		Self::read_attribute(avatar, AvatarAttributes::Quantity) >= quantity
+	}
+
+	pub fn use_avatar(avatar: &mut Avatar, quantity: u8) -> (bool, SoulCount) {
+		let current_qty = Self::read_attribute(avatar, AvatarAttributes::Quantity);
+
+		if current_qty < quantity {
+			return (false, 0)
+		}
+
+		let new_qty = current_qty - quantity;
+		Self::write_attribute(avatar, AvatarAttributes::Quantity, new_qty);
+
+		let ouput_soul_points = if new_qty == 0 {
+			let soul_points = avatar.souls;
+			avatar.souls = 0;
+			soul_points
+		} else {
+			let diff = Self::read_attribute(avatar, AvatarAttributes::CustomType1)
+				.saturating_mul(quantity) as SoulCount;
+			avatar.souls = avatar.souls.saturating_sub(diff);
+			diff
+		};
+
+		(true, ouput_soul_points)
+	}
+
+	pub fn enums_to_bits<T>(enum_list: &Vec<T>) -> u8
+	where
+		T: Copy + IntoByte,
+	{
+		enum_list
+			.iter()
+			.fold(0_u8, |acc, entry| acc | (1 << (entry.clone().into_byte().saturating_sub(1))))
+	}
+
+	pub fn enums_order_to_bits<T>(enum_list: &Vec<T>) -> u8
+	where
+		T: Ord + IntoByte + Clone,
+	{
+		let mut sorted_list = (*enum_list).clone();
+		sorted_list.sort();
+
+		let mut byte_buff = 0;
+		let mut buff_fill_size = 0;
+
+		for entry in enum_list {
+			if let Ok(index) = sorted_list.binary_search(entry) {
+				byte_buff |= (index as u32);
+				let fill_amount = (usize::BITS - index.leading_zeros());
+				byte_buff <<= fill_amount;
+				buff_fill_size += fill_amount;
+			}
+		}
+
+		(byte_buff >> (buff_fill_size.saturating_sub(8))) as u8
+	}
+
 	pub fn bits_to_enums<T>(bits: u8) -> Vec<T>
 	where
 		T: FromByte,
@@ -367,5 +451,33 @@ impl AvatarUtils {
 			.filter(|n| (bits & (1 << n)) != 0)
 			.map(|n| T::from_byte(n))
 			.collect()
+	}
+
+	pub fn bits_order_to_enum<T>(bit_order: u8, mut enum_list: Vec<T>) -> Vec<T>
+	where
+		T: Copy + Ord + FromByte,
+	{
+		enum_list.sort();
+		let mut output_enums = Vec::new();
+		let bit_index_array: [u8; 8] = [
+			0b10000000, 0b01000000, 0b00100000, 0b00010000, 0b00001000, 0b00000100, 0b00000010,
+			0b00000001,
+		];
+
+		let bit_size = u8::BITS as usize;
+
+		for i in (0..bit_size).step_by(2) {
+			// We extract the i and i+1 bits from the 'bit_order' parameter, then slide them
+			// to the right so that we can get a position from those bits -> 00 to 11 -> 0 to 3
+			let bit_position = ((bit_order & (bit_index_array[i] | bit_index_array[i + 1])) >>
+				(bit_size - i)) as usize;
+			// TODO: This will always be true
+			// Probably bug
+			if bit_size > bit_position {
+				output_enums.push(enum_list[bit_position]);
+			}
+		}
+
+		output_enums
 	}
 }
