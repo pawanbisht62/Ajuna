@@ -407,7 +407,69 @@ where
 		season_id: SeasonId,
 		season: &SeasonOf<T>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
-		todo!()
+		let (mut input_leader, matching_sacrifices, non_matching_sacrifices) =
+			Self::match_avatars(input_leader, input_sacrifices);
+
+		let mut leader_progress_array = AvatarUtils::read_progress_array(&input_leader.1);
+
+		let rarity_type = RarityType::from_byte(AvatarUtils::read_lowest_progress_byte(
+			&leader_progress_array,
+			ByteType::High,
+		));
+
+		if AvatarUtils::has_attribute_with_value(
+			&input_leader.1,
+			AvatarAttributes::ItemType,
+			ItemType::Equipable,
+		) && AvatarUtils::has_attribute_with_value(
+			&input_leader.1,
+			AvatarAttributes::ItemSubType,
+			EquipableItemType::ArmorBase,
+		) && AvatarUtils::has_attribute_with_value(
+			&input_leader.1,
+			AvatarAttributes::RarityType,
+			rarity_type,
+		) {
+			let mut armor_components = matching_sacrifices.iter().filter(|(_, sacrifice)| {
+				AvatarUtils::has_attribute_with_value(
+					sacrifice,
+					AvatarAttributes::ItemType,
+					ItemType::Equipable,
+				) && AvatarUtils::has_attribute_with_value(
+					sacrifice,
+					AvatarAttributes::ItemSubType,
+					EquipableItemType::ArmorBase,
+				)
+			});
+
+			if let Some((_, sacrifice)) = armor_components.next() {
+				let sacrifice_spec_byte =
+					AvatarUtils::read_spec_byte(sacrifice, AvatarSpecBytes::SpecByte1);
+				AvatarUtils::write_spec_byte(
+					&mut input_leader.1,
+					AvatarSpecBytes::SpecByte1,
+					sacrifice_spec_byte,
+				);
+			}
+		}
+
+		AvatarUtils::write_attribute(
+			&mut input_leader.1,
+			AvatarAttributes::RarityType,
+			rarity_type.into_byte(),
+		);
+
+		let output_vec: Vec<ForgeOutput<T>> = non_matching_sacrifices
+			.into_iter()
+			.map(|sacrifice_id| ForgeOutput::Consumed(sacrifice_id))
+			.chain(
+				matching_sacrifices
+					.into_iter()
+					.map(|(sacrifice_id, _)| ForgeOutput::Consumed(sacrifice_id)),
+			)
+			.collect();
+
+		Ok((LeaderForgeOutput::Forged(input_leader, 0), output_vec))
 	}
 
 	fn breed_avatars(

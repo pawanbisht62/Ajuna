@@ -544,4 +544,17 @@ impl AvatarUtils {
 
 		progress_bytes
 	}
+
+	pub fn read_lowest_progress_byte(progress_bytes: &[u8; 11], byte_type: ByteType) -> u8 {
+		let mut result = u8::MAX;
+
+		for i in 0..progress_bytes.len() {
+			let value = Self::read_dna_at(progress_bytes, i, byte_type);
+			if result > value {
+				result = value;
+			}
+		}
+
+		result
+	}
 }
