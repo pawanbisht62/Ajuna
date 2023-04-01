@@ -3,6 +3,7 @@ use crate::types::{
 	avatar::tools::v2::constants::{BASE_PROGRESS_PROBABILITY, MAX_SACRIFICE},
 	Avatar, AvatarVersion, Dna, SeasonId, SoulCount,
 };
+use frame_support::traits::Len;
 use sp_runtime::SaturatedConversion;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -109,9 +110,38 @@ impl AvatarBuilder {
 			.with_soul_count(quantity as u32 * HexType::X1 as u32)
 	}
 
-	pub fn into_equipable(mut self, equipable_type: EquipableItemType) -> Self {
+	pub fn into_equipable(
+		mut self,
+		equipable_type: EquipableItemType,
+		pet_type: PetType,
+		slot_type: SlotType,
+		rarity_type: RarityType,
+		soul_points: SoulCount,
+	) -> Self {
+		let armor_assemble_progress = if EquipableItemType::is_armor(equipable_type) {
+			AvatarUtils::enums_to_bits(&vec![equipable_type])
+		} else {
+			0
+		};
+
 		self.with_attribute(AvatarAttributes::ItemType, ItemType::Equipable)
 			.with_attribute(AvatarAttributes::ItemSubType, equipable_type)
+			.with_attribute(AvatarAttributes::ClassType1, slot_type)
+			.with_attribute(AvatarAttributes::ClassType2, pet_type)
+			.with_attribute(AvatarAttributes::CustomType1, HexType::X0)
+			.with_attribute(AvatarAttributes::RarityType, rarity_type)
+			.with_attribute_raw(AvatarAttributes::Quantity, 1)
+			// Unused
+			.with_attribute(AvatarAttributes::CustomType2, HexType::X0)
+			.with_spec_byte(AvatarSpecBytes::SpecByte1, armor_assemble_progress)
+			.with_spec_byte(AvatarSpecBytes::SpecByte2, 0)
+			.with_spec_byte(AvatarSpecBytes::SpecByte3, 0)
+			.with_spec_byte(AvatarSpecBytes::SpecByte4, 0)
+			.with_spec_byte(AvatarSpecBytes::SpecByte5, 0)
+			.with_spec_byte(AvatarSpecBytes::SpecByte6, 0)
+			.with_spec_byte(AvatarSpecBytes::SpecByte7, 0)
+			.with_spec_byte(AvatarSpecBytes::SpecByte8, 0)
+			.with_soul_count(soul_points)
 	}
 
 	pub fn into_blueprint(
@@ -300,6 +330,13 @@ impl AvatarUtils {
 		}
 	}
 
+	pub fn read_spec_byte_as<T>(avatar: &Avatar, spec_byte: AvatarSpecBytes) -> T
+	where
+		T: FromByte,
+	{
+		T::from_byte(Self::read_spec_byte(avatar, spec_byte))
+	}
+
 	pub fn write_full_spec_bytes(avatar: &mut Avatar, value: [u8; 16]) {
 		(&mut avatar.dna[5..16]).copy_from_slice(&value);
 	}
@@ -479,5 +516,32 @@ impl AvatarUtils {
 		}
 
 		output_enums
+	}
+
+	pub fn write_progress_bytes(
+		rarity_type: RarityType,
+		probability: f32,
+		mut progress_bytes: [u8; 11],
+	) -> [u8; 11] {
+		for i in 0..progress_bytes.len() {
+			let random_value = Self::read_dna_at(&progress_bytes, i, ByteType::Full);
+			let mut new_rarity = rarity_type.clone().into_byte();
+
+			if random_value < (u8::MAX as f32 * probability) as u8 {
+				new_rarity = new_rarity.saturating_add(1);
+			}
+
+			Self::write_dna_at(&mut progress_bytes, i, ByteType::High, new_rarity);
+			Self::write_dna_at(
+				&mut progress_bytes,
+				i,
+				ByteType::Low,
+				random_value % PROGRESS_VARIATIONS,
+			);
+		}
+
+		Self::write_dna_at(&mut progress_bytes, 10, ByteType::High, rarity_type.into_byte());
+
+		progress_bytes
 	}
 }

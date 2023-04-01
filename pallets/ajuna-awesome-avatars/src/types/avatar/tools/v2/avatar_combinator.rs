@@ -1,6 +1,6 @@
 use super::*;
 use sp_runtime::DispatchError;
-use std::marker::PhantomData;
+use std::{io::Read, marker::PhantomData};
 
 pub(crate) struct AvatarCombinator<'a, T: Config>(pub PhantomData<&'a T>);
 
@@ -191,22 +191,22 @@ where
 			})
 			.collect::<Vec<MaterialItemType>>();
 
-		let spec_bytes = AvatarUtils::read_full_spec_bytes(&input_leader.1);
+		let leader_spec_bytes = AvatarUtils::read_full_spec_bytes(&input_leader.1);
 
-		let unord_1 = AvatarUtils::bits_to_enums::<MaterialItemType>(spec_bytes[0]);
-		let ord_1 = AvatarUtils::bits_order_to_enum(spec_bytes[1], unord_1);
+		let unord_1 = AvatarUtils::bits_to_enums::<MaterialItemType>(leader_spec_bytes[0]);
+		let ord_1 = AvatarUtils::bits_order_to_enum(leader_spec_bytes[1], unord_1);
 		let pat_1_flag = sacrifice_pattern == ord_1;
 
-		let unord_2 = AvatarUtils::bits_to_enums::<MaterialItemType>(spec_bytes[2]);
-		let ord_2 = AvatarUtils::bits_order_to_enum(spec_bytes[3], unord_2);
+		let unord_2 = AvatarUtils::bits_to_enums::<MaterialItemType>(leader_spec_bytes[2]);
+		let ord_2 = AvatarUtils::bits_order_to_enum(leader_spec_bytes[3], unord_2);
 		let pat_2_flag = sacrifice_pattern == ord_2;
 
-		let unord_3 = AvatarUtils::bits_to_enums::<MaterialItemType>(spec_bytes[4]);
-		let ord_3 = AvatarUtils::bits_order_to_enum(spec_bytes[5], unord_3);
+		let unord_3 = AvatarUtils::bits_to_enums::<MaterialItemType>(leader_spec_bytes[4]);
+		let ord_3 = AvatarUtils::bits_order_to_enum(leader_spec_bytes[5], unord_3);
 		let pat_3_flag = sacrifice_pattern == ord_3;
 
-		let unord_4 = AvatarUtils::bits_to_enums::<MaterialItemType>(spec_bytes[6]);
-		let ord_4 = AvatarUtils::bits_order_to_enum(spec_bytes[7], unord_4);
+		let unord_4 = AvatarUtils::bits_to_enums::<MaterialItemType>(leader_spec_bytes[6]);
+		let ord_4 = AvatarUtils::bits_order_to_enum(leader_spec_bytes[7], unord_4);
 		let pat_4_flag = sacrifice_pattern == ord_4;
 
 		let mut soul_points = 0;
@@ -287,7 +287,117 @@ where
 		season_id: SeasonId,
 		season: &SeasonOf<T>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
-		todo!()
+		let mut output_sacrifices = Vec::with_capacity(input_sacrifices.len());
+
+		let leader_spec_bytes = AvatarUtils::read_full_spec_bytes(&input_leader.1);
+
+		let unord_1 = AvatarUtils::bits_to_enums::<MaterialItemType>(leader_spec_bytes[0]);
+		let pat_1 = AvatarUtils::bits_order_to_enum(leader_spec_bytes[1], unord_1);
+
+		// TODO: First quantity likely applies to leader avatar not sacrifices
+		let quantities = [
+			1_u8,
+			leader_spec_bytes[3],
+			leader_spec_bytes[4],
+			leader_spec_bytes[5],
+			leader_spec_bytes[6],
+		];
+
+		let sacrifice_pattern = input_sacrifices
+			.iter()
+			.map(|(_, sacrifice)| {
+				AvatarUtils::read_attribute_as::<MaterialItemType>(
+					sacrifice,
+					AvatarAttributes::ItemSubType,
+				)
+			})
+			.collect::<Vec<MaterialItemType>>();
+
+		let mut soul_points = 0 as SoulCount;
+
+		if sacrifice_pattern == pat_1 &&
+			input_sacrifices.iter().enumerate().all(|(index, (_, sacrifice))| {
+				AvatarUtils::can_use_avatar(sacrifice, quantities[index])
+			}) {
+			let mut success = true;
+
+			for (sacrifice_id, mut sacrifice) in input_sacrifices.into_iter() {
+				let (use_result, out_soul_points) = AvatarUtils::use_avatar(&mut sacrifice, 1);
+				success &= use_result;
+				soul_points += out_soul_points;
+
+				let sacrifice_output =
+					if AvatarUtils::read_attribute(&sacrifice, AvatarAttributes::Quantity) == 0 {
+						ForgeOutput::Consumed(sacrifice_id)
+					} else {
+						ForgeOutput::Forged((sacrifice_id, sacrifice), 0)
+					};
+
+				output_sacrifices.push(sacrifice_output);
+			}
+
+			if !success {
+				todo!()
+			}
+
+			let mut max_build = 6_usize;
+			let mut build_prop = u8::MAX;
+
+			let mut generated_equipables = Vec::with_capacity(3);
+
+			for i in 0..max_build {
+				// TODO: Add random hash
+				if (build_prop >= input_leader.1.dna[(i + 6) % 32]) && soul_points > 0 {
+					// Create new equipable avatar
+
+					let pet_type = AvatarUtils::read_attribute_as::<PetType>(
+						&input_leader.1,
+						AvatarAttributes::ClassType2,
+					);
+
+					let slot_type = AvatarUtils::read_attribute_as::<SlotType>(
+						&input_leader.1,
+						AvatarAttributes::ClassType1,
+					);
+
+					let equipable_item_type = AvatarUtils::read_spec_byte_as::<EquipableItemType>(
+						&input_leader.1,
+						AvatarSpecBytes::SpecByte3,
+					);
+
+					let dna = AvatarMinterV2::<T>(PhantomData).generate_base_avatar_dna(player)?;
+					let generated_equipable = AvatarBuilder::with_dna(season_id, dna)
+						.into_equipable(
+							equipable_item_type,
+							pet_type,
+							slot_type,
+							RarityType::Common,
+							1,
+						)
+						.build();
+
+					generated_equipables.push(generated_equipable);
+
+					soul_points = soul_points.saturating_sub(1);
+				}
+
+				// 38 :~ u8::MAX * 0.15;
+				build_prop = build_prop.saturating_sub(38);
+			}
+
+			for i in 0..soul_points as usize {
+				let sacrifice_index =
+					(input_leader.1.dna[(i + 9) % 32] as usize % output_sacrifices.len());
+				(&mut generated_equipables[sacrifice_index]).souls.saturating_inc();
+			}
+
+			output_sacrifices
+				.extend(generated_equipables.into_iter().map(|gen| ForgeOutput::Minted(gen)));
+		} else {
+			todo!()
+		}
+
+		Ok((LeaderForgeOutput::Forged(input_leader, 0), output_sacrifices))
 	}
 
 	fn assemble_avatars(

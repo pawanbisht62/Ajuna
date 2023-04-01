@@ -134,42 +134,14 @@ where
 		let spliced_dna =
 			MutatorUtils::splice_dna_strands(base_avatar.dna[26], base_avatar.dna[27]);
 
+		let pet_type = SlotRoller::<T>::roll_on(&PET_TYPE_PROBABILITIES);
+		let slot_type = SlotRoller::<T>::roll_on(&ARMOR_SLOT_PROBABILITIES);
+
+		// TODO
+		let rarity_type = RarityType::Uncommon;
+
 		AvatarBuilder::with_base_avatar(base_avatar)
-			.into_equipable(*self)
-			.with_attribute(
-				AvatarAttributes::ClassType1,
-				SlotRoller::<T>::roll_on(&ARMOR_SLOT_PROBABILITIES),
-			)
-			.with_attribute(
-				AvatarAttributes::ClassType2,
-				SlotRoller::<T>::roll_on(&PET_TYPE_PROBABILITIES),
-			)
-			// TODO RarityType
-			.with_attribute_raw(AvatarAttributes::RarityType, 1)
-			.with_attribute(AvatarAttributes::CustomType1, HexType::X0)
-			.with_attribute(AvatarAttributes::CustomType2, HexType::X0)
-			.with_attribute_raw(AvatarAttributes::Quantity, 1)
-			// TODO SpecByte and ProgressArray
-			.with_spec_byte(AvatarSpecBytes::SpecByte1, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte2, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte3, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte4, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte5, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte6, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte7, 1)
-			.with_spec_byte(AvatarSpecBytes::SpecByte8, 1)
-			.with_progress_array([0; 11])
-			/*
-			var armorAssembleProgress = AvatarTools.IsArmor(equippableItemType) ? AvatarTools.EnumsToBits(new List<EquippableItemType> { equippableItemType }) : 0;
-			var result = new Equippable(array, equippableItemType)
-			{
-				RarityType = rarityType,
-				SpecByte1 = (byte)armorAssembleProgress, // make sure that it is properly set
-				// add progressbytes here
-				ProgressArray = AvatarTools.ProgressBytes(rarityType, Constants.ProgressProbability, array.Skip(21)),
-			};
-			*/
-			.with_soul_count(((spliced_dna % 25) + 1) as SoulCount)
+			.into_equipable(*self, pet_type, slot_type, rarity_type, spliced_dna as SoulCount)
 			.build()
 	}
 }
