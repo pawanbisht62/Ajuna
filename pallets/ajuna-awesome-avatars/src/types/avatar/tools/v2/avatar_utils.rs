@@ -285,6 +285,13 @@ impl AvatarUtils {
 		}
 	}
 
+	pub fn write_typed_attribute<T>(avatar: &mut Avatar, attribute: AvatarAttributes, value: T)
+	where
+		T: IntoByte,
+	{
+		Self::write_attribute(avatar, attribute, value.into_byte())
+	}
+
 	pub fn write_attribute(avatar: &mut Avatar, attribute: AvatarAttributes, value: u8) {
 		match attribute {
 			AvatarAttributes::ItemType => Self::write_dna_strand(avatar, 0, ByteType::High, value),

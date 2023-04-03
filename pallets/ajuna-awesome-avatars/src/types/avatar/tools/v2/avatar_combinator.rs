@@ -453,10 +453,10 @@ where
 			}
 		}
 
-		AvatarUtils::write_attribute(
+		AvatarUtils::write_typed_attribute(
 			&mut input_leader.1,
 			AvatarAttributes::RarityType,
-			rarity_type.into_byte(),
+			rarity_type,
 		);
 
 		let output_vec: Vec<ForgeOutput<T>> = non_matching_sacrifices
@@ -479,7 +479,63 @@ where
 		season_id: SeasonId,
 		season: &SeasonOf<T>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
-		todo!()
+		let (mut input_leader, matching_sacrifices, non_matching_sacrifices) =
+			Self::match_avatars(input_leader, input_sacrifices);
+
+		let mut leader_progress_array = AvatarUtils::read_progress_array(&input_leader.1);
+
+		let rarity_type = RarityType::from_byte(AvatarUtils::read_lowest_progress_byte(
+			&leader_progress_array,
+			ByteType::High,
+		));
+
+		if rarity_type == RarityType::Legendary &&
+			AvatarUtils::has_attribute_with_value(
+				&input_leader.1,
+				AvatarAttributes::ItemType,
+				ItemType::Pet,
+			) && AvatarUtils::has_attribute_with_value(
+			&input_leader.1,
+			AvatarAttributes::ItemSubType,
+			PetItemType::Egg,
+		) {
+			let pet_type_list = AvatarUtils::bits_to_enums::<PetType>(AvatarUtils::read_attribute(
+				&input_leader.1,
+				AvatarAttributes::CustomType2,
+			));
+			// TODO: Replace with hash
+			let pet_type = pet_type_list[input_leader.1.dna[5] as usize % pet_type_list.len()];
+
+			AvatarUtils::write_typed_attribute(
+				&mut input_leader.1,
+				AvatarAttributes::ClassType2,
+				pet_type,
+			);
+
+			AvatarUtils::write_typed_attribute(
+				&mut input_leader.1,
+				AvatarAttributes::ItemSubType,
+				PetItemType::Pet,
+			);
+		}
+
+		AvatarUtils::write_typed_attribute(
+			&mut input_leader.1,
+			AvatarAttributes::RarityType,
+			rarity_type,
+		);
+
+		let output_vec: Vec<ForgeOutput<T>> = non_matching_sacrifices
+			.into_iter()
+			.map(|sacrifice_id| ForgeOutput::Consumed(sacrifice_id))
+			.chain(
+				matching_sacrifices
+					.into_iter()
+					.map(|(sacrifice_id, _)| ForgeOutput::Consumed(sacrifice_id)),
+			)
+			.collect();
+
+		Ok((LeaderForgeOutput::Forged(input_leader, 0), output_vec))
 	}
 
 	fn equip_avatars(
