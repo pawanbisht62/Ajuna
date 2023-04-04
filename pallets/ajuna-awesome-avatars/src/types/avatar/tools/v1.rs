@@ -88,7 +88,7 @@ where
 	fn forge_with(
 		&self,
 		player: &T::AccountId,
-		season_id: SeasonId,
+		_season_id: SeasonId,
 		season: &SeasonOf<T>,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,

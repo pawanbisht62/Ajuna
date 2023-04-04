@@ -1,6 +1,6 @@
 use super::*;
 use sp_runtime::DispatchError;
-use std::{io::Read, marker::PhantomData};
+use std::marker::PhantomData;
 
 pub(crate) struct AvatarCombinator<'a, T: Config>(pub PhantomData<&'a T>);
 
@@ -15,24 +15,73 @@ where
 		season: &SeasonOf<T>,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		match forge_type {
-			ForgeType::Stack =>
-				Self::stack_avatars(player, input_leader, input_sacrifices, season_id, season),
-			ForgeType::Tinker =>
-				Self::tinker_avatars(player, input_leader, input_sacrifices, season_id, season),
-			ForgeType::Build =>
-				Self::build_avatars(player, input_leader, input_sacrifices, season_id, season),
-			ForgeType::Assemble =>
-				Self::assemble_avatars(player, input_leader, input_sacrifices, season_id, season),
-			ForgeType::Breed =>
-				Self::breed_avatars(player, input_leader, input_sacrifices, season_id, season),
-			ForgeType::Equip =>
-				Self::equip_avatars(player, input_leader, input_sacrifices, season_id, season),
-			ForgeType::Mate =>
-				Self::mate_avatars(player, input_leader, input_sacrifices, season_id, season),
-			ForgeType::Special =>
-				Self::special_avatars(player, input_leader, input_sacrifices, season_id, season),
+			ForgeType::Stack => Self::stack_avatars(
+				player,
+				input_leader,
+				input_sacrifices,
+				season_id,
+				season,
+				hash_provider,
+			),
+			ForgeType::Tinker => Self::tinker_avatars(
+				player,
+				input_leader,
+				input_sacrifices,
+				season_id,
+				season,
+				hash_provider,
+			),
+			ForgeType::Build => Self::build_avatars(
+				player,
+				input_leader,
+				input_sacrifices,
+				season_id,
+				season,
+				hash_provider,
+			),
+			ForgeType::Assemble => Self::assemble_avatars(
+				player,
+				input_leader,
+				input_sacrifices,
+				season_id,
+				season,
+				hash_provider,
+			),
+			ForgeType::Breed => Self::breed_avatars(
+				player,
+				input_leader,
+				input_sacrifices,
+				season_id,
+				season,
+				hash_provider,
+			),
+			ForgeType::Equip => Self::equip_avatars(
+				player,
+				input_leader,
+				input_sacrifices,
+				season_id,
+				season,
+				hash_provider,
+			),
+			ForgeType::Mate => Self::mate_avatars(
+				player,
+				input_leader,
+				input_sacrifices,
+				season_id,
+				season,
+				hash_provider,
+			),
+			ForgeType::Special => Self::special_avatars(
+				player,
+				input_leader,
+				input_sacrifices,
+				season_id,
+				season,
+				hash_provider,
+			),
 			ForgeType::None => Err(Error::<T>::InvalidForgeComponents.into()),
 		}
 	}
@@ -40,6 +89,7 @@ where
 	fn match_avatars(
 		input_leader: ForgeItem<T>,
 		sacrifices: Vec<ForgeItem<T>>,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> (ForgeItem<T>, Vec<ForgeItem<T>>, Vec<AvatarIdOf<T>>) {
 		let (leader_id, mut leader) = input_leader;
 		let mut matches: u8 = 0;
@@ -81,13 +131,11 @@ where
 				match_probability) *
 				255_f32) as u8;
 
-			let sacrifice_count = sacrifices.len();
+			for _ in 0..rolls as usize {
+				let random_hash = hash_provider.get_hash_byte();
 
-			for i in 0..rolls as usize {
-				let random_hash = sacrifices[i % sacrifice_count].1.dna.as_slice();
-
-				if random_hash[(random_hash[i] % 32) as usize] < probability_match {
-					let pos = matching_score[random_hash[i] as usize % matching_score.len()];
+				if random_hash < probability_match {
+					let pos = matching_score[random_hash as usize % matching_score.len()];
 
 					leader_progress_array[pos as usize] += 0x10; // 16
 
@@ -117,11 +165,12 @@ where
 	}
 
 	fn stack_avatars(
-		player: &T::AccountId,
+		_player: &T::AccountId,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
 		season_id: SeasonId,
-		season: &SeasonOf<T>,
+		_season: &SeasonOf<T>,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		let (avatar_id, mut avatar) = input_leader;
 
@@ -143,12 +192,12 @@ where
 
 		let stack_probability = (STACK_PROBABILITY * 256_f32).abs() as u8;
 
-		for i in 0..input_sacrifices.len() {
-			if stack_probability > avatar.dna[i] {
+		for _ in 0..input_sacrifices.len() {
+			if stack_probability > hash_provider.get_hash_byte() {
 				essence_avatar = match essence_avatar {
 					None => {
-						let dna =
-							AvatarMinterV2::<T>(PhantomData).generate_base_avatar_dna(player)?;
+						let dna = AvatarMinterV2::<T>(PhantomData)
+							.generate_base_avatar_dna(hash_provider)?;
 						Some(
 							AvatarBuilder::with_dna(season_id, dna)
 								.into_essence(EssenceItemType::Glimmer, 1)
@@ -173,11 +222,12 @@ where
 	}
 
 	fn tinker_avatars(
-		player: &T::AccountId,
+		_player: &T::AccountId,
 		input_leader: ForgeItem<T>,
-		mut input_sacrifices: Vec<ForgeItem<T>>,
+		input_sacrifices: Vec<ForgeItem<T>>,
 		season_id: SeasonId,
-		season: &SeasonOf<T>,
+		_season: &SeasonOf<T>,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		let mut output_sacrifices = Vec::with_capacity(0);
 
@@ -262,7 +312,7 @@ where
 				AvatarAttributes::ClassType1,
 			);
 
-			let dna = AvatarMinterV2::<T>(PhantomData).generate_base_avatar_dna(player)?;
+			let dna = AvatarMinterV2::<T>(PhantomData).generate_base_avatar_dna(hash_provider)?;
 			let generated_blueprint = AvatarBuilder::with_dna(season_id, dna)
 				.into_blueprint(
 					BlueprintItemType::Blueprint,
@@ -281,11 +331,12 @@ where
 	}
 
 	fn build_avatars(
-		player: &T::AccountId,
+		_player: &T::AccountId,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
 		season_id: SeasonId,
-		season: &SeasonOf<T>,
+		_season: &SeasonOf<T>,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		let mut output_sacrifices = Vec::with_capacity(input_sacrifices.len());
 
@@ -340,14 +391,13 @@ where
 				todo!()
 			}
 
-			let mut max_build = 6_usize;
+			let max_build = 6_usize;
 			let mut build_prop = u8::MAX;
 
 			let mut generated_equipables = Vec::with_capacity(3);
 
-			for i in 0..max_build {
-				// TODO: Add random hash
-				if (build_prop >= input_leader.1.dna[(i + 6) % 32]) && soul_points > 0 {
+			for _ in 0..max_build {
+				if (build_prop >= hash_provider.get_hash_byte()) && soul_points > 0 {
 					// Create new equipable avatar
 
 					let pet_type = AvatarUtils::read_attribute_as::<PetType>(
@@ -365,7 +415,8 @@ where
 						AvatarSpecBytes::SpecByte3,
 					);
 
-					let dna = AvatarMinterV2::<T>(PhantomData).generate_base_avatar_dna(player)?;
+					let dna =
+						AvatarMinterV2::<T>(PhantomData).generate_base_avatar_dna(hash_provider)?;
 					let generated_equipable = AvatarBuilder::with_dna(season_id, dna)
 						.into_equipable(
 							equipable_item_type,
@@ -385,9 +436,9 @@ where
 				build_prop = build_prop.saturating_sub(38);
 			}
 
-			for i in 0..soul_points as usize {
+			for _ in 0..soul_points as usize {
 				let sacrifice_index =
-					(input_leader.1.dna[(i + 9) % 32] as usize % output_sacrifices.len());
+					hash_provider.get_hash_byte() as usize % output_sacrifices.len();
 				(&mut generated_equipables[sacrifice_index]).souls.saturating_inc();
 			}
 
@@ -401,16 +452,17 @@ where
 	}
 
 	fn assemble_avatars(
-		player: &T::AccountId,
+		_player: &T::AccountId,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
-		season_id: SeasonId,
-		season: &SeasonOf<T>,
+		_season_id: SeasonId,
+		_season: &SeasonOf<T>,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		let (mut input_leader, matching_sacrifices, non_matching_sacrifices) =
-			Self::match_avatars(input_leader, input_sacrifices);
+			Self::match_avatars(input_leader, input_sacrifices, hash_provider);
 
-		let mut leader_progress_array = AvatarUtils::read_progress_array(&input_leader.1);
+		let leader_progress_array = AvatarUtils::read_progress_array(&input_leader.1);
 
 		let rarity_type = RarityType::from_byte(AvatarUtils::read_lowest_progress_byte(
 			&leader_progress_array,
@@ -473,16 +525,17 @@ where
 	}
 
 	fn breed_avatars(
-		player: &T::AccountId,
+		_player: &T::AccountId,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
-		season_id: SeasonId,
-		season: &SeasonOf<T>,
+		_season_id: SeasonId,
+		_season: &SeasonOf<T>,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		let (mut input_leader, matching_sacrifices, non_matching_sacrifices) =
-			Self::match_avatars(input_leader, input_sacrifices);
+			Self::match_avatars(input_leader, input_sacrifices, hash_provider);
 
-		let mut leader_progress_array = AvatarUtils::read_progress_array(&input_leader.1);
+		let leader_progress_array = AvatarUtils::read_progress_array(&input_leader.1);
 
 		let rarity_type = RarityType::from_byte(AvatarUtils::read_lowest_progress_byte(
 			&leader_progress_array,
@@ -503,8 +556,8 @@ where
 				&input_leader.1,
 				AvatarAttributes::CustomType2,
 			));
-			// TODO: Replace with hash
-			let pet_type = pet_type_list[input_leader.1.dna[5] as usize % pet_type_list.len()];
+			let pet_type =
+				pet_type_list[hash_provider.get_hash_byte() as usize % pet_type_list.len()];
 
 			AvatarUtils::write_typed_attribute(
 				&mut input_leader.1,
@@ -539,11 +592,12 @@ where
 	}
 
 	fn equip_avatars(
-		player: &T::AccountId,
+		_player: &T::AccountId,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
-		season_id: SeasonId,
-		season: &SeasonOf<T>,
+		_season_id: SeasonId,
+		_season: &SeasonOf<T>,
+		_hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		let (leader_id, mut leader) = input_leader;
 
@@ -580,22 +634,26 @@ where
 		Ok((LeaderForgeOutput::Forged((leader_id, leader), 0), output_vec))
 	}
 
+	#[allow(unused_variables)]
 	fn mate_avatars(
 		player: &T::AccountId,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
 		season_id: SeasonId,
 		season: &SeasonOf<T>,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		todo!()
 	}
 
+	#[allow(unused_variables)]
 	fn special_avatars(
 		player: &T::AccountId,
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
 		season_id: SeasonId,
 		season: &SeasonOf<T>,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		todo!()
 	}

@@ -1,10 +1,8 @@
 use super::{constants::PROGRESS_VARIATIONS, types::*, ByteType};
-use crate::types::{
-	avatar::tools::v2::constants::{BASE_PROGRESS_PROBABILITY, MAX_SACRIFICE},
-	Avatar, AvatarVersion, Dna, SeasonId, SoulCount,
-};
+use crate::types::{Avatar, AvatarVersion, Dna, SeasonId, SoulCount};
 use frame_support::traits::Len;
-use sp_runtime::SaturatedConversion;
+use sp_runtime::traits::Hash;
+use std::marker::PhantomData;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AvatarAttributes {
@@ -51,7 +49,7 @@ impl AvatarBuilder {
 		Self { inner: avatar }
 	}
 
-	pub fn with_attribute<T>(mut self, attribute: AvatarAttributes, value: T) -> Self
+	pub fn with_attribute<T>(self, attribute: AvatarAttributes, value: T) -> Self
 	where
 		T: IntoByte,
 	{
@@ -88,17 +86,17 @@ impl AvatarBuilder {
 		self
 	}
 
-	pub fn into_pet(mut self, pet_type: PetItemType) -> Self {
+	pub fn into_pet(self, pet_type: PetItemType) -> Self {
 		self.with_attribute(AvatarAttributes::ItemType, ItemType::Pet)
 			.with_attribute(AvatarAttributes::ItemSubType, pet_type)
 	}
 
-	pub fn into_material(mut self, material_type: MaterialItemType) -> Self {
+	pub fn into_material(self, material_type: MaterialItemType) -> Self {
 		self.with_attribute(AvatarAttributes::ItemType, ItemType::Material)
 			.with_attribute(AvatarAttributes::ItemSubType, material_type)
 	}
 
-	pub fn into_essence(mut self, essence_type: EssenceItemType, quantity: u8) -> Self {
+	pub fn into_essence(self, essence_type: EssenceItemType, quantity: u8) -> Self {
 		self.with_attribute(AvatarAttributes::ItemType, ItemType::Essence)
 			.with_attribute(AvatarAttributes::ItemSubType, essence_type)
 			.with_attribute(AvatarAttributes::ClassType1, HexType::X0)
@@ -111,7 +109,7 @@ impl AvatarBuilder {
 	}
 
 	pub fn into_equipable(
-		mut self,
+		self,
 		equipable_type: EquipableItemType,
 		pet_type: PetType,
 		slot_type: SlotType,
@@ -145,7 +143,7 @@ impl AvatarBuilder {
 	}
 
 	pub fn into_blueprint(
-		mut self,
+		self,
 		blueprint_type: BlueprintItemType,
 		pet_type: PetType,
 		slot_type: SlotType,
@@ -173,7 +171,7 @@ impl AvatarBuilder {
 			.with_soul_count(soul_points)
 	}
 
-	pub fn into_special(mut self, special_type: SpecialItemType) -> Self {
+	pub fn into_special(self, special_type: SpecialItemType) -> Self {
 		self.with_attribute(AvatarAttributes::ItemType, ItemType::Special)
 			.with_attribute(AvatarAttributes::ItemSubType, special_type)
 	}
@@ -252,17 +250,6 @@ impl AvatarUtils {
 		T: IntoByte,
 	{
 		Self::read_attribute(avatar, attribute) == value.into_byte()
-	}
-
-	pub fn has_attribute_with_value_lower_than<T>(
-		avatar: &Avatar,
-		attribute: AvatarAttributes,
-		lower_than: T,
-	) -> bool
-	where
-		T: IntoByte,
-	{
-		Self::read_attribute(avatar, attribute) < lower_than.into_byte()
 	}
 
 	pub fn read_attribute_as<T>(avatar: &Avatar, attribute: AvatarAttributes) -> T
@@ -476,8 +463,8 @@ impl AvatarUtils {
 
 		for entry in enum_list {
 			if let Ok(index) = sorted_list.binary_search(entry) {
-				byte_buff |= (index as u32);
-				let fill_amount = (usize::BITS - index.leading_zeros());
+				byte_buff |= index as u32;
+				let fill_amount = usize::BITS - index.leading_zeros();
 				byte_buff <<= fill_amount;
 				buff_fill_size += fill_amount;
 			}
@@ -563,5 +550,63 @@ impl AvatarUtils {
 		}
 
 		result
+	}
+}
+
+pub(crate) struct HashProvider<'a, T, const N: usize>
+where
+	T: crate::Config,
+{
+	hash: [u8; N],
+	current_index: usize,
+	_marker: PhantomData<&'a T>,
+}
+
+impl<'a, T, const N: usize> HashProvider<'a, T, N>
+where
+	T: crate::Config,
+{
+	pub fn new(hash: &T::Hash) -> Self {
+		Self::new_starting_at(hash, 0)
+	}
+
+	pub fn new_starting_at(hash: &T::Hash, index: usize) -> Self {
+		// TODO: Improve
+		let mut bytes: [u8; N] = [0; N];
+
+		let hash_ref = hash.as_ref();
+		let hash_len = hash_ref.len();
+
+		bytes[0..hash_len].copy_from_slice(hash_ref);
+
+		Self { hash: bytes, current_index: index, _marker: PhantomData }
+	}
+
+	pub fn full_hash(&self, mutate_seed: usize) -> T::Hash {
+		let mut full_hash = self.hash.clone();
+
+		for i in 0..N {
+			full_hash[i] = self.hash[(i + mutate_seed) % N];
+		}
+
+		T::Hashing::hash(&full_hash)
+	}
+
+	#[inline]
+	pub fn get_hash_byte(&mut self) -> u8 {
+		self.next().unwrap_or_default()
+	}
+}
+
+impl<'a, T, const N: usize> Iterator for HashProvider<'a, T, N>
+where
+	T: crate::Config,
+{
+	type Item = u8;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		let item = self.hash[self.current_index];
+		self.current_index = (self.current_index + 1) % N;
+		Some(item)
 	}
 }

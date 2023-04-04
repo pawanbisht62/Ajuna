@@ -31,7 +31,7 @@ where
 		&self,
 		player: &T::AccountId,
 		season_id: &SeasonId,
-		season: &SeasonOf<T>,
+		_season: &SeasonOf<T>,
 		mint_option: &MintOption,
 	) -> Result<Vec<MintOutput<T>>, DispatchError> {
 		Ok(self.mint_avatar_set_for(player, season_id, mint_option)?)
@@ -44,9 +44,9 @@ where
 {
 	pub(super) fn generate_base_avatar_dna(
 		&self,
-		player: &T::AccountId,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Result<Dna, DispatchError> {
-		let base_hash = Pallet::<T>::random_hash(b"mint_avatar_v2", player);
+		let base_hash = hash_provider.full_hash(7);
 
 		Dna::try_from(base_hash.as_ref()[0..32].to_vec())
 			.map_err(|_| Error::<T>::IncorrectDna.into())
@@ -56,6 +56,7 @@ where
 		&self,
 		pack_type: PackType,
 		item_type: ItemType,
+		hash_provider: &mut HashProvider<T, 32>,
 	) -> Box<dyn AvatarMutator<T>> {
 		match item_type {
 			ItemType::Pet => Box::new(SlotRoller::<T>::roll_on_pack_type(
@@ -63,36 +64,42 @@ where
 				&PACK_TYPE_MATERIAL_PET_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_EQUIPMENT_PET_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_SPECIAL_PET_ITEM_TYPE_PROBABILITIES,
+				hash_provider,
 			)),
 			ItemType::Material => Box::new(SlotRoller::<T>::roll_on_pack_type(
 				pack_type,
 				&PACK_TYPE_MATERIAL_MATERIAL_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_EQUIPMENT_MATERIAL_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_SPECIAL_MATERIAL_ITEM_TYPE_PROBABILITIES,
+				hash_provider,
 			)),
 			ItemType::Essence => Box::new(SlotRoller::<T>::roll_on_pack_type(
 				pack_type,
 				&PACK_TYPE_MATERIAL_ESSENCE_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_EQUIPMENT_ESSENCE_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_SPECIAL_ESSENCE_ITEM_TYPE_PROBABILITIES,
+				hash_provider,
 			)),
 			ItemType::Equipable => Box::new(SlotRoller::<T>::roll_on_pack_type(
 				pack_type,
 				&PACK_TYPE_MATERIAL_EQUIPABLE_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_EQUIPMENT_EQUIPABLE_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_SPECIAL_EQUIPABLE_ITEM_TYPE_PROBABILITIES,
+				hash_provider,
 			)),
 			ItemType::Blueprint => Box::new(SlotRoller::<T>::roll_on_pack_type(
 				pack_type,
 				&PACK_TYPE_MATERIAL_BLUEPRINT_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_EQUIPMENT_BLUEPRINT_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_SPECIAL_BLUEPRINT_ITEM_TYPE_PROBABILITIES,
+				hash_provider,
 			)),
 			ItemType::Special => Box::new(SlotRoller::<T>::roll_on_pack_type(
 				pack_type,
 				&PACK_TYPE_MATERIAL_SPECIAL_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_EQUIPMENT_SPECIAL_ITEM_TYPE_PROBABILITIES,
 				&PACK_TYPE_SPECIAL_SPECIAL_ITEM_TYPE_PROBABILITIES,
+				hash_provider,
 			)),
 		}
 	}
@@ -103,6 +110,9 @@ where
 		season_id: &SeasonId,
 		mint_option: &MintOption,
 	) -> Result<Vec<MintOutput<T>>, DispatchError> {
+		let mut hash_provider =
+			HashProvider::<T, 32>::new(&Pallet::<T>::random_hash(b"avatar_minter_v2", player));
+
 		let roll_amount = mint_option.count as usize;
 
 		let rolled_item_type = SlotRoller::<T>::roll_on_pack_type(
@@ -110,14 +120,15 @@ where
 			&PACK_TYPE_MATERIAL_ITEM_PROBABILITIES,
 			&PACK_TYPE_EQUIPMENT_ITEM_PROBABILITIES,
 			&PACK_TYPE_SPECIAL_ITEM_PROBABILITIES,
+			&mut hash_provider,
 		);
 
 		let mut minted_avatars = Vec::with_capacity(roll_amount);
 
 		for _ in 0..roll_amount {
-			let avatar_id = Pallet::<T>::random_hash(b"create_avatar", player);
+			let avatar_id = hash_provider.full_hash(13);
 
-			let base_dna = self.generate_base_avatar_dna(player)?;
+			let base_dna = self.generate_base_avatar_dna(&mut hash_provider)?;
 			let base_avatar = Avatar {
 				season_id: *season_id,
 				version: mint_option.mint_version,
@@ -126,8 +137,12 @@ where
 			};
 
 			let avatar = self
-				.get_mutator_from_item_type(mint_option.mint_pack, rolled_item_type)
-				.mutate_from_base(base_avatar);
+				.get_mutator_from_item_type(
+					mint_option.mint_pack,
+					rolled_item_type,
+					&mut hash_provider,
+				)
+				.mutate_from_base(base_avatar, &mut hash_provider);
 
 			minted_avatars.push((avatar_id, avatar));
 		}
@@ -150,6 +165,9 @@ where
 		input_leader: ForgeItem<T>,
 		input_sacrifices: Vec<ForgeItem<T>>,
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
+		let mut hash_provider =
+			HashProvider::<T, 32>::new(&Pallet::<T>::random_hash(b"avatar_forger_v2", player));
+
 		let forge_type = self.can_be_forged(season, &input_leader, &input_sacrifices)?;
 
 		AvatarCombinator::<T>::combine_avatars_in(
@@ -159,12 +177,13 @@ where
 			season,
 			input_leader,
 			input_sacrifices,
+			&mut hash_provider,
 		)
 	}
 
 	fn can_be_forged(
 		&self,
-		season: &SeasonOf<T>,
+		_season: &SeasonOf<T>,
 		input_leader: &ForgeItem<T>,
 		input_sacrifices: &[ForgeItem<T>],
 	) -> Result<ForgeType, DispatchError> {
