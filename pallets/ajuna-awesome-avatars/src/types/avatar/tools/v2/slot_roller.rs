@@ -63,3 +63,5 @@ where
 		Self::roll_on(&slots, hash_provider)
 	}
 }
+
+// TODO: Add probability verification tests

@@ -121,10 +121,7 @@ where
 		let quantity = MutatorUtils::random_quantity_from_dna_strands(&base_avatar.dna[0..3]);
 
 		AvatarBuilder::with_base_avatar(base_avatar)
-			.into_material(*self)
-			.with_attribute(AvatarAttributes::CustomType1, HexType::X1)
-			.with_attribute_raw(AvatarAttributes::Quantity, quantity)
-			.with_soul_count(quantity as u32 * HexType::X1 as u32)
+			.into_material(*self, quantity)
 			.build()
 	}
 }

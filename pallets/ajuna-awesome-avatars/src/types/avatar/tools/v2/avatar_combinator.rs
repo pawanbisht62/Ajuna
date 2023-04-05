@@ -186,7 +186,12 @@ where
 				(acc_qty.saturating_add(qty), acc_souls.saturating_add(souls))
 			})
 			.unwrap_or_default();
-		AvatarUtils::write_attribute(&mut avatar, AvatarAttributes::Quantity, new_quantity);
+		let leader_quantity = AvatarUtils::read_attribute(&avatar, AvatarAttributes::Quantity);
+		AvatarUtils::write_attribute(
+			&mut avatar,
+			AvatarAttributes::Quantity,
+			leader_quantity + new_quantity,
+		);
 
 		let mut essence_avatar: Option<Avatar> = None;
 
@@ -657,4 +662,82 @@ where
 	) -> Result<(LeaderForgeOutput<T>, Vec<ForgeOutput<T>>), DispatchError> {
 		todo!()
 	}
+}
+
+#[cfg(test)]
+mod forge_stack_test {
+	use super::*;
+	use crate::mock::{ExtBuilder, Test, ALICE};
+
+	#[test]
+	fn test_stack_materials_simple() {
+		ExtBuilder::default().build().execute_with(|| {
+			let season_id = 0 as SeasonId;
+			let mut hash_provider = HashProvider::default();
+			let season = Season::default();
+
+			let (material_1_id, material_1) = create_random_avatar::<Test, _>(
+				&ALICE,
+				Some(|avatar| {
+					AvatarBuilder::with_base_avatar(avatar)
+						.into_material(MaterialItemType::Polymers, 1)
+						.build()
+				}),
+			);
+
+			let (material_2_id, material_2) = create_random_avatar::<Test, _>(
+				&ALICE,
+				Some(|avatar| {
+					AvatarBuilder::with_base_avatar(avatar)
+						.into_material(MaterialItemType::Polymers, 2)
+						.build()
+				}),
+			);
+
+			let (leader_output, other_output) = AvatarCombinator::<Test>::stack_avatars(
+				&ALICE,
+				(material_1_id, material_1),
+				vec![(material_2_id, material_2)],
+				season_id,
+				&season,
+				&mut hash_provider,
+			)
+			.expect("Should succeed in forging");
+
+			sp_std::mem::discriminant() == sp_std::mem::discriminant(&ForgeOutput::Forged(_, _));
+
+			assert!(other_output.iter().all(|output| {
+				match output {
+					ForgeOutput::Consumed(_) | ForgeOutput::Minted(_) => true,
+					_ => false,
+				}
+			}));
+
+			assert_eq!(
+				other_output
+					.iter()
+					.filter(|output| {
+						if let ForgeOutput::Minted(_) = output {
+							true
+						} else {
+							false
+						}
+					})
+					.count(),
+				1
+			);
+
+			if let LeaderForgeOutput::Forged((_, leader_avatar), _) = leader_output {
+				assert_eq!(
+					AvatarUtils::read_attribute(&leader_avatar, AvatarAttributes::Quantity),
+					3
+				);
+			} else {
+				panic!("LeaderForgeOutput should have been Forged!")
+			}
+		});
+	}
+
+	#[test]
+	fn test_stack_pet_parts() {}
 }

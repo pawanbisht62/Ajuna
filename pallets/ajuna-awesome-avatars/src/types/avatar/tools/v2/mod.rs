@@ -3,6 +3,8 @@ mod avatar_mutator;
 mod avatar_utils;
 mod constants;
 mod slot_roller;
+#[cfg(test)]
+mod test_utils;
 mod types;
 
 pub(self) use avatar_combinator::*;
@@ -10,6 +12,8 @@ pub(self) use avatar_mutator::*;
 pub(self) use avatar_utils::*;
 pub(self) use constants::*;
 pub(self) use slot_roller::*;
+#[cfg(test)]
+pub(self) use test_utils::*;
 pub(self) use types::*;
 
 use super::*;
@@ -114,20 +118,20 @@ where
 			HashProvider::<T, 32>::new(&Pallet::<T>::random_hash(b"avatar_minter_v2", player));
 
 		let roll_amount = mint_option.count as usize;
-
-		let rolled_item_type = SlotRoller::<T>::roll_on_pack_type(
-			mint_option.mint_pack,
-			&PACK_TYPE_MATERIAL_ITEM_PROBABILITIES,
-			&PACK_TYPE_EQUIPMENT_ITEM_PROBABILITIES,
-			&PACK_TYPE_SPECIAL_ITEM_PROBABILITIES,
-			&mut hash_provider,
-		);
-
 		let mut minted_avatars = Vec::with_capacity(roll_amount);
 
 		for _ in 0..roll_amount {
-			let avatar_id = hash_provider.full_hash(13);
+			let rolled_item_type = SlotRoller::<T>::roll_on_pack_type(
+				mint_option.mint_pack,
+				&PACK_TYPE_MATERIAL_ITEM_PROBABILITIES,
+				&PACK_TYPE_EQUIPMENT_ITEM_PROBABILITIES,
+				&PACK_TYPE_SPECIAL_ITEM_PROBABILITIES,
+				&mut hash_provider,
+			);
 
+			let avatar_id = Pallet::<T>::random_hash(b"avatar_minter_v2", player);
+
+			// TODO: Change so that you randomize the DNA
 			let base_dna = self.generate_base_avatar_dna(&mut hash_provider)?;
 			let base_avatar = Avatar {
 				season_id: *season_id,
@@ -196,6 +200,7 @@ where
 				input_sacrifices.iter().map(|sacrifice| &sacrifice.1).collect();
 
 			match self.determine_forge_type(leader, sacrifices.as_slice()) {
+				// TODO: Define ForgeType::None behaviour
 				ForgeType::None => Err(Error::<T>::InvalidForgeComponents.into()),
 				other => Ok(other),
 			}
@@ -204,10 +209,12 @@ where
 		}
 	}
 
+	// TODO: To be removed
 	fn min_tier(&self, target: &Avatar) -> u8 {
 		todo!()
 	}
 
+	// TODO: To be removed
 	fn last_variation(&self, target: &Avatar) -> u8 {
 		todo!()
 	}

@@ -40,6 +40,12 @@ pub(crate) struct AvatarBuilder {
 	inner: Avatar,
 }
 
+impl Default for AvatarBuilder {
+	fn default() -> Self {
+		Self { inner: Avatar::default() }
+	}
+}
+
 impl AvatarBuilder {
 	pub fn with_dna(season_id: SeasonId, dna: Dna) -> Self {
 		Self { inner: Avatar { season_id, version: AvatarVersion::V2, dna, souls: 0 } }
@@ -91,9 +97,19 @@ impl AvatarBuilder {
 			.with_attribute(AvatarAttributes::ItemSubType, pet_type)
 	}
 
-	pub fn into_material(self, material_type: MaterialItemType) -> Self {
+	pub fn into_material(self, material_type: MaterialItemType, quantity: u8) -> Self {
+		let custom_type_1 = HexType::X1;
+
 		self.with_attribute(AvatarAttributes::ItemType, ItemType::Material)
 			.with_attribute(AvatarAttributes::ItemSubType, material_type)
+			.with_attribute(AvatarAttributes::ClassType1, HexType::X0)
+			.with_attribute(AvatarAttributes::ClassType2, HexType::X0)
+			.with_attribute(AvatarAttributes::CustomType1, custom_type_1)
+			.with_attribute(AvatarAttributes::RarityType, RarityType::Common)
+			.with_attribute_raw(AvatarAttributes::Quantity, quantity)
+			// Unused
+			.with_attribute(AvatarAttributes::CustomType2, HexType::X0)
+			.with_soul_count((quantity * custom_type_1.into_byte()) as SoulCount)
 	}
 
 	pub fn into_essence(self, essence_type: EssenceItemType, quantity: u8) -> Self {
@@ -560,6 +576,15 @@ where
 	hash: [u8; N],
 	current_index: usize,
 	_marker: PhantomData<&'a T>,
+}
+
+impl<'a, T, const N: usize> Default for HashProvider<'a, T, N>
+where
+	T: crate::Config,
+{
+	fn default() -> Self {
+		Self { hash: [0; N], current_index: 0, _marker: PhantomData }
+	}
 }
 
 impl<'a, T, const N: usize> HashProvider<'a, T, N>
