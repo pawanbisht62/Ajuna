@@ -667,70 +667,43 @@ where
 #[cfg(test)]
 mod forge_stack_test {
 	use super::*;
-	use crate::mock::{ExtBuilder, Test, ALICE};
+	use crate::mock::{ExtBuilder, MockAccountId, Test, ALICE};
 
 	#[test]
-	fn test_stack_materials_simple() {
+	fn test_stack_material() {
 		ExtBuilder::default().build().execute_with(|| {
 			let season_id = 0 as SeasonId;
-			let mut hash_provider = HashProvider::default();
+			let mut hash_provider = HashProvider::new_with_bytes(HASH_BYTES);
 			let season = Season::default();
 
-			let (material_1_id, material_1) = create_random_avatar::<Test, _>(
-				&ALICE,
-				Some(|avatar| {
-					AvatarBuilder::with_base_avatar(avatar)
-						.into_material(MaterialItemType::Polymers, 1)
-						.build()
-				}),
-			);
+			let material_input_1 = create_random_material(&ALICE, MaterialItemType::Polymers, 1);
+			let material_input_2 = create_random_material(&ALICE, MaterialItemType::Polymers, 2);
+			let material_input_3 = create_random_material(&ALICE, MaterialItemType::Polymers, 5);
+			let material_input_4 = create_random_material(&ALICE, MaterialItemType::Polymers, 3);
 
-			let (material_2_id, material_2) = create_random_avatar::<Test, _>(
-				&ALICE,
-				Some(|avatar| {
-					AvatarBuilder::with_base_avatar(avatar)
-						.into_material(MaterialItemType::Polymers, 2)
-						.build()
-				}),
-			);
+			let total_soul_points = material_input_1.1.souls +
+				material_input_2.1.souls +
+				material_input_3.1.souls +
+				material_input_4.1.souls;
 
-			let (leader_output, other_output) = AvatarCombinator::<Test>::stack_avatars(
+			let (leader_output, sacrifice_output) = AvatarCombinator::<Test>::stack_avatars(
 				&ALICE,
-				(material_1_id, material_1),
-				vec![(material_2_id, material_2)],
+				material_input_1,
+				vec![material_input_2, material_input_3, material_input_4],
 				season_id,
 				&season,
 				&mut hash_provider,
 			)
 			.expect("Should succeed in forging");
 
-			sp_std::mem::discriminant() == sp_std::mem::discriminant(&ForgeOutput::Forged(_, _));
-
-			assert!(other_output.iter().all(|output| {
-				match output {
-					ForgeOutput::Consumed(_) | ForgeOutput::Minted(_) => true,
-					_ => false,
-				}
-			}));
-
-			assert_eq!(
-				other_output
-					.iter()
-					.filter(|output| {
-						if let ForgeOutput::Minted(_) = output {
-							true
-						} else {
-							false
-						}
-					})
-					.count(),
-				1
-			);
+			assert!(sacrifice_output.iter().all(|output| !is_forged(output)));
+			assert_eq!(sacrifice_output.iter().filter(|output| is_minted(output)).count(), 1);
 
 			if let LeaderForgeOutput::Forged((_, leader_avatar), _) = leader_output {
+				assert_eq!(leader_avatar.souls, total_soul_points);
 				assert_eq!(
 					AvatarUtils::read_attribute(&leader_avatar, AvatarAttributes::Quantity),
-					3
+					11
 				);
 			} else {
 				panic!("LeaderForgeOutput should have been Forged!")
@@ -739,5 +712,48 @@ mod forge_stack_test {
 	}
 
 	#[test]
-	fn test_stack_pet_parts() {}
+	fn test_stack_pet_parts() {
+		ExtBuilder::default().build().execute_with(|| {
+			let season_id = 0 as SeasonId;
+			let mut hash_provider = HashProvider::new_with_bytes(HASH_BYTES);
+			let season = Season::default();
+
+			let pet_part_input_1 =
+				create_random_pet_part(&ALICE, PetType::FoxishDude, SlotType::Head, 3);
+			let pet_part_input_2 =
+				create_random_pet_part(&ALICE, PetType::FoxishDude, SlotType::ArmBack, 4);
+			let pet_part_input_3 =
+				create_random_pet_part(&ALICE, PetType::FoxishDude, SlotType::LegBack, 5);
+			let pet_part_input_4 =
+				create_random_pet_part(&ALICE, PetType::FoxishDude, SlotType::LegFront, 5);
+
+			let total_soul_points = pet_part_input_1.1.souls +
+				pet_part_input_2.1.souls +
+				pet_part_input_3.1.souls +
+				pet_part_input_4.1.souls;
+
+			let (leader_output, sacrifice_output) = AvatarCombinator::<Test>::stack_avatars(
+				&ALICE,
+				pet_part_input_1,
+				vec![pet_part_input_2, pet_part_input_3, pet_part_input_4],
+				season_id,
+				&season,
+				&mut hash_provider,
+			)
+			.expect("Should succeed in forging");
+
+			assert!(sacrifice_output.iter().all(|output| !is_forged(output)));
+			assert_eq!(sacrifice_output.iter().filter(|output| is_minted(output)).count(), 1);
+
+			if let LeaderForgeOutput::Forged((_, leader_avatar), _) = leader_output {
+				assert_eq!(leader_avatar.souls, total_soul_points);
+				assert_eq!(
+					AvatarUtils::read_attribute(&leader_avatar, AvatarAttributes::Quantity),
+					17
+				);
+			} else {
+				panic!("LeaderForgeOutput should have been Forged!")
+			}
+		});
+	}
 }

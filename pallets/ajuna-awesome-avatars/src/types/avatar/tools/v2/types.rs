@@ -6,6 +6,10 @@ pub(crate) trait FromByte {
 	fn from_byte(byte: u8) -> Self;
 }
 
+pub(crate) trait VariantCounted {
+	fn variant_count() -> usize;
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ByteType {
 	Full = 0b1111_1111,
@@ -39,8 +43,9 @@ impl IntoByte for HexType {
 	}
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) enum NibbleType {
+	#[default]
 	X0 = 0b0000,
 	X1 = 0b0001,
 	X2 = 0b0010,
@@ -54,6 +59,28 @@ pub(crate) enum NibbleType {
 impl IntoByte for NibbleType {
 	fn into_byte(self) -> u8 {
 		self as u8
+	}
+}
+
+impl FromByte for NibbleType {
+	fn from_byte(byte: u8) -> Self {
+		match byte {
+			0 => Self::X0,
+			1 => Self::X1,
+			2 => Self::X2,
+			3 => Self::X3,
+			4 => Self::X4,
+			5 => Self::X5,
+			6 => Self::X6,
+			7 => Self::X7,
+			_ => Self::default(),
+		}
+	}
+}
+
+impl VariantCounted for NibbleType {
+	fn variant_count() -> usize {
+		8
 	}
 }
 

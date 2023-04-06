@@ -1,5 +1,8 @@
 use super::{constants::PROGRESS_VARIATIONS, types::*, ByteType};
-use crate::types::{Avatar, AvatarVersion, Dna, SeasonId, SoulCount};
+use crate::types::{
+	avatar::tools::v2::constants::PROGRESS_PROBABILITY, Avatar, AvatarVersion, Dna, SeasonId,
+	SoulCount,
+};
 use frame_support::traits::Len;
 use sp_runtime::traits::Hash;
 use std::marker::PhantomData;
@@ -95,6 +98,71 @@ impl AvatarBuilder {
 	pub fn into_pet(self, pet_type: PetItemType) -> Self {
 		self.with_attribute(AvatarAttributes::ItemType, ItemType::Pet)
 			.with_attribute(AvatarAttributes::ItemSubType, pet_type)
+			.with_attribute_raw(AvatarAttributes::Quantity, 1)
+	}
+
+	pub fn into_pet_part(self, pet_type: PetType, slot_type: SlotType, quantity: u8) -> Self {
+		let custom_type_1 = HexType::X1;
+
+		let base_seed = pet_type.into_byte() as usize + slot_type.into_byte() as usize;
+		let base_0 = AvatarUtils::create_pattern::<NibbleType>(
+			base_seed,
+			EquipableItemType::ArmorBase.into_byte() as usize,
+		);
+		let comp_1 = AvatarUtils::create_pattern::<NibbleType>(
+			base_seed,
+			EquipableItemType::ArmorComponent1.into_byte() as usize,
+		);
+		let comp_2 = AvatarUtils::create_pattern::<NibbleType>(
+			base_seed,
+			EquipableItemType::ArmorComponent2.into_byte() as usize,
+		);
+		let comp_3 = AvatarUtils::create_pattern::<NibbleType>(
+			base_seed,
+			EquipableItemType::ArmorComponent3.into_byte() as usize,
+		);
+
+		self.with_attribute(AvatarAttributes::ItemType, ItemType::Pet)
+			.with_attribute(AvatarAttributes::ItemSubType, PetItemType::PetPart)
+			.with_attribute(AvatarAttributes::ClassType1, slot_type)
+			.with_attribute(AvatarAttributes::ClassType2, pet_type)
+			.with_attribute(AvatarAttributes::CustomType1, HexType::X1)
+			.with_attribute(AvatarAttributes::RarityType, RarityType::Uncommon)
+			.with_attribute_raw(AvatarAttributes::Quantity, quantity)
+			// Unused
+			.with_attribute(AvatarAttributes::CustomType1, HexType::X0)
+			.with_spec_byte(AvatarSpecBytes::SpecByte1, AvatarUtils::enums_to_bits(&base_0))
+			.with_spec_byte(AvatarSpecBytes::SpecByte2, AvatarUtils::enums_order_to_bits(&base_0))
+			.with_spec_byte(AvatarSpecBytes::SpecByte3, AvatarUtils::enums_to_bits(&comp_1))
+			.with_spec_byte(AvatarSpecBytes::SpecByte4, AvatarUtils::enums_order_to_bits(&comp_1))
+			.with_spec_byte(AvatarSpecBytes::SpecByte5, AvatarUtils::enums_to_bits(&comp_2))
+			.with_spec_byte(AvatarSpecBytes::SpecByte6, AvatarUtils::enums_order_to_bits(&comp_2))
+			.with_spec_byte(AvatarSpecBytes::SpecByte7, AvatarUtils::enums_to_bits(&comp_3))
+			.with_spec_byte(AvatarSpecBytes::SpecByte8, AvatarUtils::enums_order_to_bits(&comp_3))
+			.with_soul_count((quantity * custom_type_1.into_byte()) as SoulCount)
+	}
+
+	pub fn into_egg(self, rarity_type: RarityType, pet_variation: PetType) -> Self {
+		let progress_array = AvatarUtils::read_progress_array(&self.inner);
+		let soul_points =
+			(((self.inner.dna[26] as u16) << 8) | (self.inner.dna[27] as u16)) % 99 + 1;
+
+		self.with_attribute(AvatarAttributes::ItemType, ItemType::Pet)
+			.with_attribute(AvatarAttributes::ItemSubType, PetItemType::Egg)
+			// Unused
+			.with_attribute(AvatarAttributes::ClassType1, HexType::X0)
+			// Unused
+			.with_attribute(AvatarAttributes::ClassType2, HexType::X0)
+			.with_attribute(AvatarAttributes::CustomType1, HexType::X0)
+			.with_attribute(AvatarAttributes::RarityType, rarity_type)
+			.with_attribute_raw(AvatarAttributes::Quantity, 1)
+			.with_attribute(AvatarAttributes::CustomType2, pet_variation)
+			.with_progress_array(AvatarUtils::write_progress_bytes(
+				rarity_type,
+				PROGRESS_PROBABILITY,
+				progress_array,
+			))
+			.with_soul_count(soul_points as SoulCount)
 	}
 
 	pub fn into_material(self, material_type: MaterialItemType, quantity: u8) -> Self {
@@ -458,6 +526,34 @@ impl AvatarUtils {
 		(true, ouput_soul_points)
 	}
 
+	// TODO: Add verification tests for the methods below
+	pub fn create_pattern<T>(mut base_speed: usize, increase_seed: usize) -> Vec<T>
+	where
+		T: Copy + Ord + FromByte + VariantCounted,
+	{
+		// Equivalent to "0x35AAB76B4482CADFF35BB3BD1C86648697B6F6833B47B939AECE95EDCD034785"
+		let fixed_seed: [u8; 32] = [
+			53, 170, 183, 107, 68, 130, 202, 223, 243, 91, 179, 189, 28, 134, 100, 134, 151, 182,
+			246, 131, 59, 71, 185, 57, 174, 206, 149, 237, 205, 3, 71, 133,
+		];
+
+		let mut all_enum = (0..T::variant_count())
+			.into_iter()
+			.map(|variant| variant as u8)
+			.collect::<Vec<_>>();
+		let mut pattern = Vec::with_capacity(4);
+
+		for _ in 0..4 {
+			base_speed = base_speed.saturating_add(increase_seed);
+			let rand_1 = fixed_seed[base_speed % 32];
+
+			let enum_type = all_enum.remove(rand_1 as usize % all_enum.len());
+			pattern.push(enum_type);
+		}
+
+		pattern.into_iter().map(|item| T::from_byte(item)).collect()
+	}
+
 	pub fn enums_to_bits<T>(enum_list: &Vec<T>) -> u8
 	where
 		T: Copy + IntoByte,
@@ -593,6 +689,11 @@ where
 {
 	pub fn new(hash: &T::Hash) -> Self {
 		Self::new_starting_at(hash, 0)
+	}
+
+	#[cfg(test)]
+	pub fn new_with_bytes(bytes: [u8; N]) -> Self {
+		Self { hash: bytes, current_index: 0, _marker: PhantomData }
 	}
 
 	pub fn new_starting_at(hash: &T::Hash, index: usize) -> Self {
